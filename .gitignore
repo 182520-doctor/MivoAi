@@ -1,0 +1,37 @@
+.env
+.env.*
+!.env.example
+
+.DS_Store
+
+# Python
+.venv/
+.ruff_cache/
+__pycache__/
+*.py[cod]
+
+# JavaScript
+node_modules/
+.next/
+dist/
+build/
+
+# Logs
+*.log
+apps/api/data/*.db
+runtime/
+apps/api/data/assets/
+
+# Local credentials and secrets
+runtime/secrets/
+*.key
+
+# Downloaded/local Codex runtime artifacts. Install them from vendor/codex/INSTALLATION.md.
+vendor/codex/bin/
+vendor/codex/download/
+
+# IDE and test caches
+.idea/workspace.xml
+.idea/**/workspace.xml
+.pytest_cache/
+*.tsbuildinfo
