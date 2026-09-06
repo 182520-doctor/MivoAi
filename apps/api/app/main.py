@@ -94,7 +94,9 @@ def create_app(
     )
     register_exception_handlers(api)
     api.include_router(create_status_router(codex_client))
-    api.include_router(create_conversation_router(conversation_service))
+    api.include_router(
+        create_conversation_router(conversation_service, app_settings.allowed_origins)
+    )
     api.include_router(create_provider_router(provider_service))
     api.include_router(create_generation_router(generation_service, repository))
     return api

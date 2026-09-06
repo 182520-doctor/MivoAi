@@ -1,7 +1,7 @@
+from app.core.config import _resolve_codex_binary
 from app.core.security import is_origin_allowed
 from app.db.database import Database
 from app.db.repositories import ConversationRepository
-from app.utils.codex_history import normalize_history
 
 
 def test_repository_persists_conversation_and_submission(tmp_path) -> None:
@@ -40,30 +40,6 @@ def test_repository_persists_conversation_and_submission(tmp_path) -> None:
     database.close()
 
 
-def test_codex_history_is_normalized_to_chronological_messages() -> None:
-    turns = [
-        {
-            "items": [
-                {"type": "userMessage", "id": "u2", "content": [{"text": "第二问"}]},
-                {"type": "agentMessage", "id": "a2", "text": "第二答"},
-            ]
-        },
-        {
-            "items": [
-                {"type": "userMessage", "id": "u1", "content": [{"text": "第一问"}]},
-                {"type": "agentMessage", "id": "a1", "text": "第一答"},
-            ]
-        },
-    ]
-
-    messages = normalize_history(turns)
-
-    assert [message["content"] for message in messages] == [
-        "第一问",
-        "第一答",
-        "第二问",
-        "第二答",
-    ]
 
 
 def test_origin_policy_allows_local_browser_and_non_browser_clients() -> None:
@@ -72,3 +48,31 @@ def test_origin_policy_allows_local_browser_and_non_browser_clients() -> None:
     assert is_origin_allowed(None, allowed) is True
     assert is_origin_allowed("http://127.0.0.1:3000", allowed) is True
     assert is_origin_allowed("https://untrusted.example", allowed) is False
+
+
+def test_codex_binary_uses_explicit_environment_path(monkeypatch, tmp_path) -> None:
+    configured = tmp_path / "custom-codex.exe"
+    monkeypatch.setenv("CODEX_BINARY", str(configured))
+    monkeypatch.setattr("app.core.config.shutil.which", lambda _: None)
+
+    assert _resolve_codex_binary(tmp_path) == configured
+
+
+def test_codex_binary_prefers_bundled_windows_binary(monkeypatch, tmp_path) -> None:
+    binary = tmp_path / "vendor" / "codex" / "bin" / "codex.exe"
+    binary.parent.mkdir(parents=True)
+    binary.write_text("", encoding="utf-8")
+    monkeypatch.delenv("CODEX_BINARY", raising=False)
+    monkeypatch.setattr("app.core.config.os.name", "nt")
+    monkeypatch.setattr("app.core.config.shutil.which", lambda _: None)
+
+    assert _resolve_codex_binary(tmp_path) == binary
+
+
+def test_codex_binary_falls_back_to_path_command(monkeypatch, tmp_path) -> None:
+    path_binary = tmp_path / "codex.cmd"
+    monkeypatch.delenv("CODEX_BINARY", raising=False)
+    monkeypatch.setattr("app.core.config.os.name", "nt")
+    monkeypatch.setattr("app.core.config.shutil.which", lambda _: str(path_binary))
+
+    assert _resolve_codex_binary(tmp_path) == path_binary

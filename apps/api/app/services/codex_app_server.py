@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
+import subprocess
 from collections import deque
 from collections.abc import AsyncIterator
 from pathlib import Path
@@ -17,6 +19,7 @@ from typing import Any
 from app.core.exceptions import AppServerError
 from app.core.protocol_logging import create_protocol_logger, redact_protocol_value
 from app.models.codex import CodexEvent
+from app.services.codex_events import TurnEventNormalizer
 
 
 class CodexAppServerClient:
@@ -34,6 +37,7 @@ class CodexAppServerClient:
         self.process: asyncio.subprocess.Process | None = None
         self.server_info: dict[str, Any] | None = None
         self.account: dict[str, Any] | None = None
+        self.requires_openai_auth: bool | None = None
 
         # JSON-RPC responses only carry numeric IDs. Futures connect each response
         # back to the coroutine that issued the corresponding request.
@@ -60,7 +64,9 @@ class CodexAppServerClient:
 
     @property
     def authenticated(self) -> bool:
-        return self.account is not None
+        """Whether the provider's OpenAI authentication requirement is satisfied."""
+
+        return self.account is not None or self.requires_openai_auth is False
 
     def _log_protocol(self, direction: str, payload: Any) -> None:
         """Write one sanitized protocol record to both console and log file."""
@@ -76,6 +82,8 @@ class CodexAppServerClient:
         async with self._start_lock:
             if self.running:
                 return
+            self.account = None
+            self.requires_openai_auth = None
             if not self.binary.is_file():
                 raise AppServerError(f"Codex binary not found: {self.binary}")
 
@@ -89,6 +97,7 @@ class CodexAppServerClient:
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
                 cwd=self.workspace,
+                **_subprocess_startup_options(),
             )
             self._log_protocol(
                 "lifecycle",
@@ -113,12 +122,15 @@ class CodexAppServerClient:
                 "account/read", {"refreshToken": False}, timeout=20
             )
             self.account = account_result.get("account")
+            self.requires_openai_auth = account_result.get("requiresOpenaiAuth")
 
     async def stop(self) -> None:
         """Stop App Server and release background reader tasks."""
 
         process = self.process
         self.process = None
+        self.account = None
+        self.requires_openai_auth = None
         if process and process.returncode is None:
             process.terminate()
             try:
@@ -226,9 +238,10 @@ class CodexAppServerClient:
             turn_id = result["turn"]["id"]
             yield {"type": "meta", "threadId": active_thread_id, "turnId": turn_id}
 
+            normalizer = TurnEventNormalizer(turn_id)
             while True:
                 event = await asyncio.wait_for(queue.get(), timeout=180)
-                normalized = self._normalize_turn_event(event, turn_id)
+                normalized = normalizer.normalize(event)
                 if normalized:
                     yield normalized
                     if normalized["type"] in {"done", "error"}:
@@ -242,64 +255,6 @@ class CodexAppServerClient:
                 if not subscribers:
                     self._subscribers.pop(active_thread_id, None)
 
-    @staticmethod
-    def _normalize_turn_event(
-        event: dict[str, Any], turn_id: str
-    ) -> CodexEvent | None:
-        """Reduce verbose protocol notifications to the events consumed by the UI."""
-
-        method = event.get("method")
-        params = event.get("params", {})
-        if params.get("turnId") not in (None, turn_id):
-            return None
-        if method == "item/agentMessage/delta":
-            return {
-                "type": "delta",
-                "text": params.get("delta", ""),
-                "itemId": params.get("itemId"),
-            }
-        if method == "item/started" and params.get("item", {}).get("type") == "reasoning":
-            item = params["item"]
-            return {
-                "type": "reasoning_started",
-                "text": _extract_reasoning_text(item),
-                "itemId": item.get("id"),
-            }
-        if method in {
-            "item/reasoning/delta",
-            "item/reasoningSummary/delta",
-            "item/agentReasoning/delta",
-        }:
-            return {
-                "type": "reasoning_delta",
-                "text": params.get("delta", ""),
-                "itemId": params.get("itemId"),
-            }
-        if method == "item/completed" and params.get("item", {}).get("type") == "reasoning":
-            item = params["item"]
-            return {
-                "type": "reasoning_completed",
-                "text": _extract_reasoning_text(item),
-                "itemId": item.get("id"),
-            }
-        if method == "thread/tokenUsage/updated":
-            usage = params.get("tokenUsage", {}).get("last", {})
-            reasoning_tokens = usage.get("reasoningOutputTokens", 0)
-            return {"type": "reasoning_usage", "tokens": reasoning_tokens}
-        if method == "item/completed" and params.get("item", {}).get("type") == "agentMessage":
-            item = params["item"]
-            return {
-                "type": "message_completed",
-                "text": item["text"],
-                "itemId": item["id"],
-            }
-        if method == "turn/completed":
-            turn = params.get("turn", {})
-            if turn.get("status") == "failed":
-                error = turn.get("error") or {}
-                return {"type": "error", "message": error.get("message", "Codex 回复失败")}
-            return {"type": "done", "status": turn.get("status", "completed")}
-        return None
 
     async def _send(self, payload: dict[str, Any]) -> None:
         """Serialize writes because asyncio subprocess stdin is a shared stream."""
@@ -340,7 +295,7 @@ class CodexAppServerClient:
                 for subscriber in list(self._subscribers.get(thread_id, set())):
                     subscriber.put_nowait(message)
 
-        # Wake every waiter if the subprocess exits, otherwise SSE requests could
+        # Wake every waiter if the subprocess exits, otherwise chat requests could
         # remain blocked until their full timeout expires.
         disconnected = {
             "method": "turn/completed",
@@ -386,39 +341,18 @@ class CodexAppServerClient:
         return {
             "running": self.running,
             "authenticated": self.authenticated,
+            "accountAuthenticated": self.account is not None,
+            "requiresOpenaiAuth": self.requires_openai_auth,
             "version": self.server_info.get("userAgent") if self.server_info else None,
             "platform": self.server_info.get("platformOs") if self.server_info else None,
             "binary": str(self.binary),
         }
 
 
-def _extract_reasoning_text(item: dict[str, Any]) -> str:
-    """Best-effort extraction for reasoning payloads across App Server versions.
-
-    Current local App Server builds often expose only the reasoning item lifecycle
-    and token counts, with empty `summary` and `content` arrays. Keeping this
-    parser broad makes the gateway ready for versions that do stream summaries.
-    """
-
-    fragments: list[str] = []
-    for key in ("summary", "content"):
-        value = item.get(key)
-        if isinstance(value, str):
-            fragments.append(value)
-        elif isinstance(value, list):
-            fragments.extend(_extract_text_from_list(value))
-    return "\n".join(fragment for fragment in fragments if fragment).strip()
 
 
-def _extract_text_from_list(values: list[Any]) -> list[str]:
-    fragments: list[str] = []
-    for value in values:
-        if isinstance(value, str):
-            fragments.append(value)
-        elif isinstance(value, dict):
-            text = value.get("text") or value.get("content") or value.get("summary")
-            if isinstance(text, str):
-                fragments.append(text)
-            elif isinstance(text, list):
-                fragments.extend(_extract_text_from_list(text))
-    return fragments
+def _subprocess_startup_options() -> dict[str, int]:
+    if os.name != "nt":
+        return {}
+    create_no_window = getattr(subprocess, "CREATE_NO_WINDOW", None)
+    return {"creationflags": create_no_window} if create_no_window is not None else {}

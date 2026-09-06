@@ -47,7 +47,10 @@ def create_protocol_logger(log_path: Path) -> logging.Logger:
     logger.setLevel(logging.INFO)
     logger.propagate = False
     formatter = logging.Formatter("%(asctime)s %(message)s", "%Y-%m-%d %H:%M:%S")
-    for handler in (logging.StreamHandler(sys.stdout), logging.FileHandler(log_path)):
+    for handler in (
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler(log_path, encoding="utf-8"),
+    ):
         handler.setFormatter(formatter)
         logger.addHandler(handler)
     return logger
