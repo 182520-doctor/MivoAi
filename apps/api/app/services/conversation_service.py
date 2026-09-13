@@ -94,12 +94,7 @@ class ConversationService:
     async def start_message(
         self, conversation_id: str, payload: MessageCreate
     ) -> AsyncIterator[CodexEvent]:
-        """Validate and schedule a turn before returning its SSE event iterator.
-
-        Validation happens before the HTTP response starts, allowing the API layer
-        to return meaningful 404/409 status codes instead of errors inside a 200
-        streaming response.
-        """
+        """Validate and schedule a turn before returning its event iterator."""
 
         conversation = self._require_conversation(conversation_id)
         if conversation_id in self._active_turns:
@@ -165,6 +160,7 @@ class ConversationService:
         await active_turn.queue.put({"type": "done", "status": "interrupted"})
         if active_turn.task:
             active_turn.task.cancel()
+            await asyncio.gather(active_turn.task, return_exceptions=True)
         return "interrupt_requested"
 
     def _require_conversation(self, conversation_id: str) -> Conversation:
@@ -179,7 +175,7 @@ class ConversationService:
         payload: MessageCreate,
         active_turn: ActiveTurn,
     ) -> None:
-        """Bridge one Codex turn into the queue consumed by the SSE response."""
+        """Bridge one Codex turn into the queue consumed by the WebSocket."""
 
         error_message: str | None = None
         try:
@@ -203,6 +199,13 @@ class ConversationService:
                     self._repository.append_assistant_content(
                         active_turn.assistant_message_id or "", event["text"]
                     )
+                if event["type"] == "output":
+                    self._repository.replace_assistant_content(
+                        active_turn.assistant_message_id or "", event["content"]
+                    )
+                    self._repository.replace_reasoning(
+                        active_turn.local_turn_id or "", event["reasoning"]
+                    )
                 if event["type"] == "message_completed":
                     self._repository.replace_assistant_content(
                         active_turn.assistant_message_id or "", event.get("text", "")
@@ -222,7 +225,7 @@ class ConversationService:
                 if event["type"] == "error":
                     error_message = str(event.get("message") or "Codex 回复失败")
                 await active_turn.queue.put(event)
-        except Exception as exc:  # noqa: BLE001 - transport errors become terminal SSE events
+        except Exception as exc:  # noqa: BLE001 - transport errors become terminal events
             error_message = str(exc)
             await active_turn.queue.put({"type": "error", "message": str(exc)})
         finally:
@@ -260,7 +263,7 @@ class ConversationService:
         active_turn: ActiveTurn,
         model: dict[str, object],
     ) -> None:
-        """Stream Ark Chat API events through the existing SSE contract."""
+        """Stream Ark Chat API events through the browser event contract."""
 
         api_key = str(model.get("api_key") or "")
         config = json.loads(str(model.get("config_json") or "{}"))

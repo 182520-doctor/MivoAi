@@ -2,7 +2,7 @@
 name = "ai-dev-api"
 version = "0.1.0"
 description = "Layered FastAPI gateway for the local Codex App Server."
-readme = "../../README.md"
+readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "cryptography>=45.0.0",
