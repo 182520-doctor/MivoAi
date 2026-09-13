@@ -40,6 +40,7 @@ def test_start_reports_provider_authentication_requirements(
 ) -> None:
     binary = tmp_path / "codex.exe"
     binary.touch()
+    (tmp_path / "codex-code-mode-host").touch()
     client = CodexAppServerClient(
         binary, tmp_path / "workspace", tmp_path / "protocol.log", protocol_logging_enabled=False
     )
@@ -72,3 +73,67 @@ def test_start_reports_provider_authentication_requirements(
         assert client.status()["requiresOpenaiAuth"] is None
 
     asyncio.run(run())
+
+
+def test_create_thread_is_ephemeral(monkeypatch, tmp_path) -> None:
+    client = CodexAppServerClient(
+        tmp_path / "codex",
+        tmp_path / "workspace",
+        tmp_path / "protocol.log",
+        protocol_logging_enabled=False,
+    )
+    request = AsyncMock(return_value={"thread": {"id": "web-thread"}})
+    monkeypatch.setattr(client, "request", request)
+
+    thread_id = asyncio.run(client.create_thread(tmp_path / "project"))
+
+    assert thread_id == "web-thread"
+    params = request.await_args.args[1]
+    assert params["ephemeral"] is True
+    assert params["cwd"] == str(tmp_path / "project")
+
+
+def test_chat_replaces_thread_not_loaded_after_restart(monkeypatch, tmp_path) -> None:
+    client = CodexAppServerClient(
+        tmp_path / "codex",
+        tmp_path / "workspace",
+        tmp_path / "protocol.log",
+        protocol_logging_enabled=False,
+    )
+    monkeypatch.setattr(client, "start", AsyncMock())
+    monkeypatch.setattr(client, "create_thread", AsyncMock(return_value="fresh-thread"))
+    request = AsyncMock(return_value={"turn": {"id": "turn-1"}})
+    monkeypatch.setattr(client, "request", request)
+
+    async def run() -> None:
+        iterator = client.chat("hello", "stale-thread", tmp_path / "project")
+        event = await anext(iterator)
+        assert event["threadId"] == "fresh-thread"
+        await iterator.aclose()
+
+    asyncio.run(run())
+    client.create_thread.assert_awaited_once_with(tmp_path / "project")
+    assert request.await_args.args[0] == "turn/start"
+    params = request.await_args.args[1]
+    assert params["cwd"] == str((tmp_path / "project").resolve())
+    assert params["sandboxPolicy"] == {
+        "type": "workspaceWrite",
+        "writableRoots": [str((tmp_path / "project").resolve())],
+        "networkAccess": False,
+        "excludeTmpdirEnvVar": False,
+        "excludeSlashTmp": False,
+    }
+
+
+def test_start_fails_with_actionable_error_when_host_is_missing(tmp_path) -> None:
+    binary = tmp_path / "codex"
+    binary.touch()
+    client = CodexAppServerClient(
+        binary,
+        tmp_path / "workspace",
+        tmp_path / "protocol.log",
+        protocol_logging_enabled=False,
+    )
+
+    with pytest.raises(Exception, match="codex-code-mode-host"):
+        asyncio.run(client.start())

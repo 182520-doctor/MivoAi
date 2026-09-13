@@ -17,6 +17,7 @@ class MessageCreate(BaseModel):
     clientMessageId: str = Field(min_length=1, max_length=100)
     providerId: str = Field(default="codex_local", max_length=80)
     modelId: str | None = Field(default=None, max_length=160)
+    projectId: str | None = Field(default=None, max_length=100)
 
     @field_validator("message")
     @classmethod
@@ -83,3 +84,5 @@ class ActiveTurn:
     model_id: str = "codex-local-default"
     provider_model: dict[str, object] | None = None
     generation_task_id: str | None = None
+    project_id: str | None = None
+    workspace_path: str | None = None

@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 from collections.abc import AsyncIterator
+from pathlib import Path
 from typing import Any
 
 from app.core.exceptions import (
@@ -15,10 +16,11 @@ from app.core.exceptions import (
     ProviderConfigurationError,
 )
 from app.core.interfaces import CodexClient
-from app.db.repositories import ConversationRepository
+from app.db.repositories import ConversationRepository, CreativeProjectRepository
 from app.models.codex import CodexEvent
 from app.models.conversation import ActiveTurn, Conversation, MessageCreate
 from app.services.provider_service import ProviderService
+from app.services.quality_gate_service import QualityGateService
 from app.services.volcengine import VolcengineChatClient
 
 
@@ -49,12 +51,15 @@ class ConversationService:
         codex_client: CodexClient,
         provider_service: ProviderService | None = None,
         volcengine_client: VolcengineChatClient | None = None,
+        creative_repository: CreativeProjectRepository | None = None,
     ) -> None:
         self._repository = repository
         self._codex = codex_client
         self._active_turns: dict[str, ActiveTurn] = {}
         self._providers = provider_service
         self._volcengine = volcengine_client or VolcengineChatClient()
+        self._creative_projects = creative_repository
+        self._quality_gate = QualityGateService()
 
     def list_conversations(self) -> list[dict[str, str]]:
         return [
@@ -108,6 +113,12 @@ class ConversationService:
             if payload.providerId != selected["provider_id"]:
                 raise ProviderConfigurationError("所选模型不属于指定供应商")
 
+        project = None
+        if payload.projectId and self._creative_projects:
+            project = self._creative_projects.get_project(payload.projectId)
+            if not project:
+                raise ConversationNotFoundError("创作项目不存在")
+
         self._repository.start_submission(payload.clientMessageId, conversation_id)
         turn = self._repository.create_turn_with_messages(
             conversation_id, payload.clientMessageId, payload.message
@@ -118,6 +129,9 @@ class ConversationService:
             local_turn_id=turn.id,
             assistant_message_id=turn.assistant_message_id,
         )
+        if project:
+            active_turn.project_id = payload.projectId
+            active_turn.workspace_path = str(project["workspacePath"])
         if selected:
             active_turn.provider_id = str(selected["provider_id"])
             active_turn.model_id = str(selected["id"])
@@ -183,13 +197,42 @@ class ConversationService:
                 await self._run_volcengine_turn(payload, active_turn, active_turn.provider_model)
                 return
             await self._codex.start()
-            thread_id = conversation.thread_id or await self._codex.create_thread()
+            project_thread = (
+                self._creative_projects.get_thread(active_turn.project_id)
+                if active_turn.project_id and self._creative_projects
+                else None
+            )
+            thread_id = project_thread or (
+                conversation.thread_id
+                or await self._codex.create_thread(
+                    Path(active_turn.workspace_path)
+                    if active_turn.workspace_path
+                    else None
+                )
+            )
             active_turn.thread_id = thread_id
-            title = payload.message[:40] if not conversation.thread_id else conversation.title
-            self._repository.attach_thread(conversation.id, thread_id, title)
 
-            async for event in self._codex.chat(payload.message, thread_id):
+            async for event in self._codex.chat(
+                payload.message,
+                thread_id,
+                Path(active_turn.workspace_path) if active_turn.workspace_path else None,
+            ):
                 if event["type"] == "meta":
+                    # chat() may replace a stale ephemeral ID after an App Server
+                    # restart. Persist the ID actually used for this turn.
+                    active_turn.thread_id = event["threadId"]
+                    title = (
+                        payload.message[:40]
+                        if not conversation.thread_id
+                        else conversation.title
+                    )
+                    self._repository.attach_thread(
+                        conversation.id, active_turn.thread_id, title
+                    )
+                    if active_turn.project_id and self._creative_projects:
+                        self._creative_projects.attach_thread(
+                            active_turn.project_id, active_turn.thread_id
+                        )
                     active_turn.turn_id = event["turnId"]
                     self._repository.set_codex_turn(
                         active_turn.local_turn_id or "", active_turn.turn_id
@@ -225,6 +268,30 @@ class ConversationService:
                 if event["type"] == "error":
                     error_message = str(event.get("message") or "Codex 回复失败")
                 await active_turn.queue.put(event)
+            if active_turn.project_id and self._creative_projects:
+                workspace = Path(active_turn.workspace_path or "")
+                quality = self._quality_gate.inspect(workspace)
+                self._quality_gate.write_report(workspace, quality)
+                sync = self._creative_projects.reconcile_workspace(
+                    active_turn.project_id
+                )
+                document_url = (
+                    f"/api/creative-projects/{active_turn.project_id}/files/"
+                    "exports/novel-project.md"
+                )
+                document_link = f"\n\n[打开完整项目文档]({document_url})"
+                self._repository.append_assistant_content(
+                    active_turn.assistant_message_id or "", document_link
+                )
+                await active_turn.queue.put(
+                    {
+                        "type": "project_sync",
+                        "projectId": active_turn.project_id,
+                        "documentUrl": document_url,
+                        "quality": quality,
+                        **sync,
+                    }
+                )
         except Exception as exc:  # noqa: BLE001 - transport errors become terminal events
             error_message = str(exc)
             await active_turn.queue.put({"type": "error", "message": str(exc)})

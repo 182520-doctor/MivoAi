@@ -86,6 +86,13 @@ class CodexAppServerClient:
             self.requires_openai_auth = None
             if not self.binary.is_file():
                 raise AppServerError(f"Codex binary not found: {self.binary}")
+            host = self._code_mode_host_path()
+            if not host.is_file():
+                raise AppServerError(
+                    "Codex 执行组件缺失："
+                    f"{host}。请安装与当前 Codex 版本和平台匹配的 "
+                    "codex-code-mode-host，或通过 CODEX_BINARY 指向完整的 Codex 安装。"
+                )
 
             self.workspace.mkdir(parents=True, exist_ok=True)
             self._loaded_threads.clear()
@@ -175,25 +182,44 @@ class CodexAppServerClient:
 
         await self._send({"method": method, "params": params})
 
-    async def create_thread(self) -> str:
-        """Create a persistent, read-only Codex thread for creative conversation."""
+    async def create_thread(self, workspace: Path | None = None) -> str:
+        """Create an in-memory website thread bound to a project workspace.
+
+        Website conversations are persisted by this application's SQLite database.
+        Keeping the underlying Codex thread ephemeral prevents them from appearing
+        in the user's Codex desktop task history.
+        """
+        thread_workspace = workspace or self.workspace
 
         result = await self.request(
             "thread/start",
             {
-                "cwd": str(self.workspace),
+                "cwd": str(thread_workspace),
                 "approvalPolicy": "never",
-                "sandbox": "read-only",
+                "sandbox": "workspace-write",
                 "personality": "friendly",
-                "ephemeral": False,
+                "ephemeral": True,
                 "environments": [],
                 "selectedCapabilityRoots": [],
                 "config": {"features.shell_tool": False, "web_search": "disabled"},
                 "serviceName": "zaojing_web",
                 "developerInstructions": (
-                    "你是造境网站里的创意沟通助手。使用中文简洁回答，帮助用户梳理创意、"
-                    "完善需求和形成可执行方案。当前是纯聊天模式：不要调用工具，不要执行命令，"
-                    "不要读写文件。如果用户要求你实际操作，说明当前版本只支持沟通。"
+                    "你是造境网站里的创意导演 Agent。使用中文回答，帮助用户把一个模糊创意"
+                    "推进到可执行的内容方案、完整剧本、分镜草案或拍摄说明。"
+                    "涉及创作项目时，先读取当前工作空间中的 project.json、AGENTS.md、"
+                    "state/workflow.json、skills/novel-writing/SKILL.md、knowledge/"
+                    " 和已确认产物，再将阶段结果写回工作空间；"
+                    "普通聊天不要修改项目文件，也不要承诺实际生成图片或视频。"
+                    "只使用受限工作空间内的文件和命令工具；不要调用 Finder、PyCharm、"
+                    "浏览器控制或 Computer Use，也不要要求用户授予 GUI 权限。"
+                    "当用户要写剧本或做短片时，按导演工作流处理：默认自动补全合理信息并连续执行，"
+                    "不要把每个阶段都交给用户确认。只有缺少信息会导致作品无法成立、涉及重大方向冲突、"
+                    "或用户明确要求确认时，才暂停并提出最多 3 个关键问题；"
+                    "其余情况直接完成完整结构。"
+                    "输出应包括："
+                    "创意定位、受众与时长、核心冲突、人物设定、三幕或起承转合结构、完整剧本"
+                    "正文、关键镜头/场景调度、声音与情绪设计、可继续追问的修改方向。"
+                    "不要暴露隐藏推理，但可以在正文中提供简短的创作判断和取舍说明。"
                 ),
             },
         )
@@ -202,26 +228,22 @@ class CodexAppServerClient:
         return thread_id
 
     async def chat(
-        self, message: str, thread_id: str | None
+        self,
+        message: str,
+        thread_id: str | None,
+        workspace: Path | None = None,
     ) -> AsyncIterator[CodexEvent]:
         """Start one turn and normalize relevant App Server notifications."""
 
         await self.start()
-        active_thread_id = thread_id or await self.create_thread()
-
-        # Threads restored from SQLite must be resumed after a process restart.
-        # A newly created thread is already loaded and must not be resumed early.
-        if thread_id and thread_id not in self._loaded_threads:
-            await self.request(
-                "thread/resume",
-                {
-                    "threadId": thread_id,
-                    "excludeTurns": True,
-                    "sandbox": "read-only",
-                    "approvalPolicy": "never",
-                },
-            )
-            self._loaded_threads.add(thread_id)
+        # Ephemeral threads only live for the lifetime of this App Server process.
+        # After a backend restart, replace the SQLite reference with a fresh thread
+        # instead of resuming an old persistent Codex desktop conversation.
+        active_thread_id = (
+            thread_id
+            if thread_id and thread_id in self._loaded_threads
+            else await self.create_thread(workspace)
+        )
 
         queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue()
         self._subscribers.setdefault(active_thread_id, set()).add(queue)
@@ -231,6 +253,9 @@ class CodexAppServerClient:
                 {
                     "threadId": active_thread_id,
                     "input": [{"type": "text", "text": message}],
+                    "cwd": str((workspace or self.workspace).resolve()),
+                    "approvalPolicy": "never",
+                    "sandboxPolicy": self._workspace_sandbox_policy(workspace),
                     "environments": [],
                 },
                 timeout=30,
@@ -238,9 +263,9 @@ class CodexAppServerClient:
             turn_id = result["turn"]["id"]
             yield {"type": "meta", "threadId": active_thread_id, "turnId": turn_id}
 
-            normalizer = TurnEventNormalizer(turn_id)
+            normalizer = TurnEventNormalizer(turn_id, user_message=message)
             while True:
-                event = await asyncio.wait_for(queue.get(), timeout=180)
+                event = await asyncio.wait_for(queue.get(), timeout=600)
                 normalized = normalizer.normalize(event)
                 if normalized:
                     yield normalized
@@ -346,6 +371,25 @@ class CodexAppServerClient:
             "version": self.server_info.get("userAgent") if self.server_info else None,
             "platform": self.server_info.get("platformOs") if self.server_info else None,
             "binary": str(self.binary),
+            "codeModeHost": str(self._code_mode_host_path()),
+            "codeModeHostAvailable": self._code_mode_host_path().is_file(),
+        }
+
+    def _code_mode_host_path(self) -> Path:
+        suffix = ".exe" if os.name == "nt" else ""
+        return self.binary.parent / f"codex-code-mode-host{suffix}"
+
+    def _workspace_sandbox_policy(self, workspace: Path | None) -> dict[str, Any]:
+        """Limit writes to the selected website or creative-project workspace."""
+
+        writable_root = (workspace or self.workspace).resolve()
+        writable_root.mkdir(parents=True, exist_ok=True)
+        return {
+            "type": "workspaceWrite",
+            "writableRoots": [str(writable_root)],
+            "networkAccess": False,
+            "excludeTmpdirEnvVar": False,
+            "excludeSlashTmp": False,
         }
 
 

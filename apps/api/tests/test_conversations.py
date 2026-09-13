@@ -101,7 +101,7 @@ def test_websocket_interrupt_and_disconnect_release_turn(tmp_path, disconnect):
             super().__init__()
             self.interrupted = threading.Event()
 
-        async def chat(self, message, thread_id):
+        async def chat(self, message, thread_id, workspace=None):
             yield {"type": "meta", "threadId": thread_id, "turnId": "waiting"}
             yield {"type": "output", "content": "", "reasoning": "Working"}
             await asyncio.Event().wait()

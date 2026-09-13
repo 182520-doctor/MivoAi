@@ -16,7 +16,7 @@ class FakeCodexClient:
     async def stop(self) -> None:
         self.running = False
 
-    async def create_thread(self) -> str:
+    async def create_thread(self, workspace=None) -> str:
         return "test-thread"
 
     async def request(
@@ -28,7 +28,7 @@ class FakeCodexClient:
         return {"data": [], "nextCursor": None}
 
     async def chat(
-        self, message: str, thread_id: str | None
+        self, message: str, thread_id: str | None, workspace=None
     ) -> AsyncIterator[CodexEvent]:
         yield {
             "type": "meta",

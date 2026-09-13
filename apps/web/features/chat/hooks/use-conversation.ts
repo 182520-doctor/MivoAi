@@ -26,6 +26,7 @@ export function useConversation() {
   const stopRequested = useRef(false);
   const historyRequest = useRef<AbortController | null>(null);
   const createRequest = useRef<AbortController | null>(null);
+  const projectId = useRef<string | null>(null);
 
   const refreshList = useCallback(async (signal?: AbortSignal) => {
     try {
@@ -116,12 +117,14 @@ export function useConversation() {
     setMessages([]);
     setCursor(null);
     setNotice("");
+    projectId.current = null;
     setLoading(false);
   }
 
   async function sendMessage(
     text: string,
     model: { id: string; providerId: string },
+    creativeProjectId?: string | null,
   ) {
     const message = text.trim();
     if (!message || busy.current || loading) return;
@@ -166,6 +169,7 @@ export function useConversation() {
           clientMessageId: user.id,
           modelId: model.id,
           providerId: model.providerId,
+          projectId: creativeProjectId || projectId.current || undefined,
         },
         (event) => {
           const previousId = assistantId;
@@ -178,6 +182,14 @@ export function useConversation() {
           );
           if (event.type === "done" && event.status === "interrupted")
             setNotice("回复已停止");
+          if (event.type === "project_sync") {
+            const count = event.changedArtifacts.length;
+            setNotice(
+              count
+                ? `项目已同步，更新了 ${count} 个阶段产物。`
+                : "项目已同步，阶段文件没有新增变化。",
+            );
+          }
           if (event.type === "control_error") setNotice(event.message);
         },
       );

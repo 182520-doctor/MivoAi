@@ -1,4 +1,10 @@
-"""Accumulate streamed items into separate progress and answer projections."""
+"""Accumulate streamed items into separate progress and answer projections.
+
+Codex only exposes public reasoning summaries, not private chain-of-thought.
+This normalizer combines those public summaries with a lightweight Chinese
+workflow hint so the product can show an understandable "thinking process"
+without inventing hidden reasoning.
+"""
 
 from typing import Any
 
@@ -6,9 +12,10 @@ from app.models.codex import CodexEvent
 
 
 class TurnEventNormalizer:
-    def __init__(self, turn_id: str) -> None:
+    def __init__(self, turn_id: str, user_message: str = "") -> None:
         self.turn_id = turn_id
         self.items: dict[str, dict[str, Any]] = {}
+        self.public_progress_hint = _public_progress_hint(user_message)
 
     def normalize(self, event: dict[str, Any]) -> CodexEvent | None:
         method = event.get("method")
@@ -85,7 +92,9 @@ class TurnEventNormalizer:
             # Older servers may omit phase until completion. Keep provisional
             # text in progress, then move it atomically into the final answer.
             target = content if item.get("phase") == "final_answer" else reasoning
-            target.append(text)
+            target.append(_localize_public_summary(text))
+        if self.public_progress_hint:
+            reasoning.insert(0, self.public_progress_hint)
         return {
             "type": "output",
             "content": "\n\n".join(content),
@@ -101,3 +110,30 @@ def _text(value: Any) -> str:
     if isinstance(value, dict):
         return _text(value.get("text") or value.get("content") or value.get("summary"))
     return ""
+
+
+def _public_progress_hint(user_message: str) -> str:
+    """Return a visible workflow note tailored to the user's task."""
+
+    normalized = user_message.lower()
+    if any(keyword in user_message for keyword in ("剧本", "导演", "分镜", "短片", "故事")):
+        return (
+            "导演工作流：正在拆解创意核心、人物关系、情绪弧线、场景结构和剧本输出格式。"
+            "如果关键信息缺失，会先提出少量问题；信息足够时会直接给出可执行剧本。"
+        )
+    if any(keyword in user_message for keyword in ("提示词", "画面", "海报", "镜头")):
+        return "创作过程：正在提炼主体、构图、风格、光线、材质和可复用提示词结构。"
+    if any(keyword in normalized for keyword in ("plan", "方案")) or "创意" in user_message:
+        return "创作过程：正在判断目标、受众、风格方向、执行步骤和可落地输出。"
+    return "工作过程：正在理解你的需求，整理目标、约束和合适的回答结构。"
+
+
+def _localize_public_summary(text: str) -> str:
+    """Make short public Codex summaries readable for Chinese users."""
+
+    stripped = text.strip()
+    translations = {
+        "**Preparing concise warm Chinese reply**": "准备一段简洁、友好的中文回复。",
+        "Preparing concise warm Chinese reply": "准备一段简洁、友好的中文回复。",
+    }
+    return translations.get(stripped, text)

@@ -122,6 +122,29 @@ button:focus-visible, textarea:focus-visible, input:focus-visible { outline: 2px
 }
 .composer.studio textarea { min-height: 154px; padding: 25px 28px 10px; font-size: 16px; }
 .composer textarea::placeholder { color: #b4b8bf; }
+.script-options {
+  min-height: 49px;
+  margin: 0 20px;
+  padding: 8px 10px;
+  border-top: 1px solid #eef0f2;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: #777d86;
+  font-size: 11px;
+}
+.script-options > span { color: #30353c; font-weight: 700; }
+.script-options label { display: flex; align-items: center; gap: 7px; }
+.script-options input {
+  width: 76px;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid #e2e5e8;
+  border-radius: 6px;
+  background: #fafbfc;
+  color: #30353c;
+  font-size: 11px;
+}
 .composer-footer {
   min-height: 62px;
   padding: 8px 14px 13px 20px;
@@ -131,6 +154,48 @@ button:focus-visible, textarea:focus-visible, input:focus-visible { outline: 2px
   gap: 14px;
 }
 .composer-tools, .submit-area { display: flex; align-items: center; gap: 8px; }
+.agent-mode-label {
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 7px;
+  background: #171b20;
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.composer-select {
+  position: relative;
+  height: 38px;
+  padding: 0 9px;
+  border: 1px solid #e4e7ea;
+  border-radius: 7px;
+  background: white;
+  color: #4e555e;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.composer-select:focus-within,
+.composer-select:hover { border-color: #9ed0ef; background: #f8fcff; }
+.composer-select select {
+  max-width: 190px;
+  height: 100%;
+  padding: 0 2px;
+  border: 0;
+  outline: 0;
+  appearance: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 12px;
+}
+.composer-select > svg:last-child { flex: 0 0 auto; color: #90969e; pointer-events: none; }
+.task-select select { width: 72px; }
+.model-select select { width: 170px; }
 .tool-pill {
   height: 38px;
   padding: 0 13px;
@@ -194,6 +259,133 @@ button:focus-visible, textarea:focus-visible, input:focus-visible { outline: 2px
 .quick-actions strong, .quick-actions small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .quick-actions strong { margin-bottom: 4px; font-size: 14px; }
 .quick-actions small { color: #969ba3; font-size: 11px; }
+
+.director-panel {
+  width: min(1160px, calc(100% - 64px));
+  margin: 34px auto 0;
+  padding: 18px;
+  border: 1px solid #e4e7eb;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .88);
+  display: grid;
+  grid-template-columns: minmax(220px, .8fr) minmax(320px, 1.1fr);
+  gap: 16px;
+  box-shadow: 0 12px 28px rgba(22, 34, 50, .04);
+}
+.director-copy { padding: 5px 8px; }
+.director-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--blue);
+  font-size: 11px;
+  font-weight: 750;
+}
+.director-copy h2 {
+  margin: 12px 0 9px;
+  font-size: 20px;
+  line-height: 1.35;
+}
+.director-copy p {
+  margin: 0;
+  color: #717781;
+  font-size: 12px;
+  line-height: 1.8;
+}
+.director-form textarea {
+  width: 100%;
+  min-height: 96px;
+  padding: 12px 13px;
+  border: 1px solid #e2e6ea;
+  border-radius: 7px;
+  resize: vertical;
+  background: #fbfcfd;
+  line-height: 1.65;
+  font-size: 13px;
+}
+.director-controls {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: 92px 108px auto;
+  gap: 8px;
+  align-items: end;
+}
+.director-controls label { display: grid; gap: 5px; color: #777d86; font-size: 11px; }
+.director-controls input {
+  width: 100%;
+  height: 36px;
+  padding: 0 9px;
+  border: 1px solid #e2e6ea;
+  border-radius: 6px;
+  background: white;
+  font-size: 12px;
+}
+.director-controls button {
+  height: 36px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: 6px;
+  background: #171b20;
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  cursor: pointer;
+  font-size: 12px;
+}
+.director-controls button:disabled { background: #d7dbe0; cursor: not-allowed; }
+.director-notice { margin: 9px 0 0; color: #2a8a62; font-size: 11px; }
+.workflow-preview {
+  grid-column: 1 / -1;
+  padding-top: 15px;
+  border-top: 1px solid #eef0f2;
+}
+.workflow-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #333941;
+}
+.workflow-head > svg { color: var(--blue); }
+.workflow-head strong, .workflow-head small { display: block; }
+.workflow-head strong { font-size: 13px; }
+.workflow-head small {
+  margin-top: 3px;
+  color: #8d939b;
+  overflow-wrap: anywhere;
+  font-size: 10px;
+}
+.workflow-preview ol {
+  margin: 13px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  list-style: none;
+}
+.workflow-preview li {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid #edf0f2;
+  border-radius: 7px;
+  background: #fbfcfd;
+  display: grid;
+  grid-template-columns: 17px minmax(0, 1fr);
+  gap: 8px;
+}
+.workflow-preview li svg {
+  margin-top: 2px;
+  color: #35a873;
+}
+.workflow-preview li strong,
+.workflow-preview li small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.workflow-preview li strong { margin-bottom: 4px; font-size: 12px; }
+.workflow-preview li small { color: #858b94; font-size: 10px; line-height: 1.55; }
+.spin { animation: spin .8s linear infinite; }
 
 .discover {
   width: min(1320px, calc(100% - 64px));
@@ -392,6 +584,8 @@ button:focus-visible, textarea:focus-visible, input:focus-visible { outline: 2px
 .composer.compact textarea { min-height: 64px; max-height: 150px; padding: 14px 17px 3px; font-size: 13px; }
 .composer.compact .composer-footer { min-height: 43px; padding: 2px 8px 8px 11px; }
 .composer.compact .tool-pill { height: 33px; }
+.composer.compact .agent-mode-label,
+.composer.compact .composer-select { height: 33px; }
 .composer-dock > p:last-child { margin: 7px auto 0; text-align: center; color: #a0a5ac; font-size: 9px; }
 .mobile-menu { display: none; width: 34px; height: 34px; color: #747a83; place-items: center; }
 .markdown { max-width: 100%; overflow-wrap: anywhere; }
@@ -444,9 +638,12 @@ button:focus-visible, textarea:focus-visible, input:focus-visible { outline: 2px
 .markdown tr:nth-child(even) td { background: #fafbfc; }
 
 @keyframes pulse { 50% { opacity: .25; transform: scale(.8); } }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 @media (max-width: 1050px) {
   .quick-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .director-panel { grid-template-columns: 1fr; }
+  .workflow-preview ol { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .discover { margin-top: 64px; }
   .gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 }
@@ -461,12 +658,25 @@ button:focus-visible, textarea:focus-visible, input:focus-visible { outline: 2px
   .composer.studio { min-height: 186px; }
   .composer.studio textarea { min-height: 125px; padding: 19px 18px 8px; font-size: 14px; }
   .composer-footer { padding-inline: 11px; }
-  .tool-pill:not(.primary), .submit-area > span { display: none; }
+  .tool-pill, .submit-area > span { display: none; }
+  .composer-footer { align-items: flex-end; }
+  .composer-tools { min-width: 0; gap: 6px; }
+  .agent-mode-label { padding: 0 9px; }
+  .agent-mode-label svg { display: none; }
+  .composer-select { min-width: 0; padding-inline: 7px; }
+  .model-select { max-width: 148px; }
+  .model-select select { width: 112px; text-overflow: ellipsis; }
+  .script-options { margin-inline: 11px; flex-wrap: wrap; gap: 8px 12px; }
+  .script-options > span { width: 100%; }
   .quick-actions { margin-top: 22px; gap: 8px; }
   .quick-actions > button { height: 74px; padding: 9px; grid-template-columns: 38px minmax(0, 1fr); }
   .quick-actions > button > svg { display: none; }
   .quick-icon { width: 38px; height: 38px; }
   .quick-actions small { display: none; }
+  .director-panel { width: calc(100% - 24px); margin-top: 22px; padding: 13px; }
+  .director-controls { grid-template-columns: 1fr 1fr; }
+  .director-controls button { grid-column: 1 / -1; }
+  .workflow-preview ol { grid-template-columns: 1fr; }
   .discover { width: calc(100% - 24px); margin-top: 45px; }
   .discover-head { align-items: flex-start; flex-direction: column; gap: 10px; }
   .discover-tabs { width: 100%; overflow-x: auto; }

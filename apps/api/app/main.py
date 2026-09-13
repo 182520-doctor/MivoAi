@@ -18,6 +18,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.api.errors import register_exception_handlers
 from app.api.routes.conversations import create_conversation_router
+from app.api.routes.creative_projects import create_creative_project_router
 from app.api.routes.generations import create_generation_router
 from app.api.routes.providers import create_provider_router
 from app.api.routes.status import create_status_router
@@ -26,11 +27,13 @@ from app.core.interfaces import CodexClient
 from app.core.secrets import SecretBox
 from app.core.security import is_origin_allowed
 from app.db.database import Database
-from app.db.repositories import ConversationRepository
+from app.db.repositories import ConversationRepository, CreativeProjectRepository
 from app.services.codex_app_server import CodexAppServerClient
 from app.services.conversation_service import ConversationService
+from app.services.creative_project_service import CreativeProjectService
 from app.services.generation_service import GenerationService
 from app.services.provider_service import ProviderService
+from app.services.quality_gate_service import QualityGateService
 
 
 def create_app(
@@ -50,9 +53,18 @@ def create_app(
     )
     database = Database(database_path or app_settings.database_path)
     repository = ConversationRepository(database)
+    creative_repository = CreativeProjectRepository(database)
     provider_service = ProviderService(database, SecretBox(app_settings.secret_key_path))
-    conversation_service = ConversationService(repository, codex_client, provider_service)
+    conversation_service = ConversationService(
+        repository,
+        codex_client,
+        provider_service,
+        creative_repository=creative_repository,
+    )
     generation_service = GenerationService(repository, provider_service, app_settings.asset_dir)
+    creative_project_service = CreativeProjectService(
+        creative_repository, app_settings.creative_workspace_dir
+    )
 
     @asynccontextmanager
     async def lifespan(api: FastAPI):
@@ -73,6 +85,7 @@ def create_app(
     api.state.conversation_service = conversation_service
     api.state.provider_service = provider_service
     api.state.generation_service = generation_service
+    api.state.creative_project_service = creative_project_service
     api.add_middleware(
         TrustedHostMiddleware, allowed_hosts=list(app_settings.allowed_hosts)
     )
@@ -99,6 +112,9 @@ def create_app(
     )
     api.include_router(create_provider_router(provider_service))
     api.include_router(create_generation_router(generation_service, repository))
+    api.include_router(
+        create_creative_project_router(creative_project_service, QualityGateService())
+    )
     return api
 
 

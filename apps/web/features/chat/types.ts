@@ -18,6 +18,7 @@ export type MessagePayload = {
   clientMessageId: string;
   providerId: string;
   modelId: string;
+  projectId?: string;
 };
 
 type Correlation = { clientMessageId?: string };
@@ -37,6 +38,15 @@ export type ServerEvent = Correlation &
         text?: string;
       }
     | { type: "reasoning_usage"; tokens: number }
+    | {
+        type: "project_sync";
+        projectId: string;
+        documentUrl: string;
+        changedArtifacts: string[];
+        completedSteps?: string[];
+        currentStepKey?: string | null;
+        status?: string;
+      }
     | { type: "delta" | "message_completed"; text: string }
     | { type: "done"; status: string }
     | { type: "error" | "control_error"; message: string; code?: number }

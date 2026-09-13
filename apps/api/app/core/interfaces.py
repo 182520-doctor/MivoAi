@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
+from pathlib import Path
 from typing import Any, Protocol
 
 from app.models.codex import CodexEvent
@@ -15,7 +16,7 @@ class CodexClient(Protocol):
 
     async def stop(self) -> None: ...
 
-    async def create_thread(self) -> str: ...
+    async def create_thread(self, workspace: Path | None = None) -> str: ...
 
     async def request(
         self,
@@ -24,6 +25,8 @@ class CodexClient(Protocol):
         timeout: float = 30,
     ) -> dict[str, Any]: ...
 
-    def chat(self, message: str, thread_id: str | None) -> AsyncIterator[CodexEvent]: ...
+    def chat(
+        self, message: str, thread_id: str | None, workspace: Path | None = None
+    ) -> AsyncIterator[CodexEvent]: ...
 
     def status(self) -> dict[str, Any]: ...

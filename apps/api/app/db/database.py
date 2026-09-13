@@ -198,6 +198,88 @@ class Database:
                     FOREIGN KEY(session_id) REFERENCES sessions(id),
                     FOREIGN KEY(task_id) REFERENCES generation_tasks(id)
                 );
+
+                -- creative_projects 是剧本/短剧/图片/视频等创作工程的业务根。
+                -- session_id 只是当前聊天入口，project_id 才是长期创作记忆。
+                CREATE TABLE IF NOT EXISTS creative_projects (
+                    id TEXT PRIMARY KEY,
+                    session_id TEXT,
+                    title TEXT NOT NULL,
+                    domain TEXT NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'draft',
+                    workspace_path TEXT NOT NULL,
+                    spec_json TEXT NOT NULL DEFAULT '{}',
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY(session_id) REFERENCES sessions(id)
+                );
+
+                CREATE TABLE IF NOT EXISTS project_threads (
+                    id TEXT PRIMARY KEY,
+                    project_id TEXT NOT NULL,
+                    provider TEXT NOT NULL DEFAULT 'codex_local',
+                    codex_thread_id TEXT,
+                    role TEXT NOT NULL DEFAULT 'main_director',
+                    status TEXT NOT NULL DEFAULT 'active',
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY(project_id) REFERENCES creative_projects(id)
+                );
+
+                CREATE TABLE IF NOT EXISTS workflow_runs (
+                    id TEXT PRIMARY KEY,
+                    project_id TEXT NOT NULL,
+                    workflow_key TEXT NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'ready',
+                    current_step_key TEXT,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    completed_at TEXT,
+                    FOREIGN KEY(project_id) REFERENCES creative_projects(id)
+                );
+
+                CREATE TABLE IF NOT EXISTS workflow_step_runs (
+                    id TEXT PRIMARY KEY,
+                    workflow_run_id TEXT NOT NULL,
+                    step_key TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'pending',
+                    sort_order INTEGER NOT NULL,
+                    artifact_kind TEXT,
+                    artifact_path TEXT,
+                    summary TEXT NOT NULL DEFAULT '',
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    completed_at TEXT,
+                    FOREIGN KEY(workflow_run_id) REFERENCES workflow_runs(id)
+                );
+
+                CREATE TABLE IF NOT EXISTS creative_artifacts (
+                    id TEXT PRIMARY KEY,
+                    project_id TEXT NOT NULL,
+                    workflow_step_run_id TEXT,
+                    kind TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    canonical_path TEXT NOT NULL,
+                    current_version INTEGER NOT NULL DEFAULT 1,
+                    status TEXT NOT NULL DEFAULT 'draft',
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY(project_id) REFERENCES creative_projects(id),
+                    FOREIGN KEY(workflow_step_run_id) REFERENCES workflow_step_runs(id)
+                );
+
+                CREATE TABLE IF NOT EXISTS creative_artifact_versions (
+                    id TEXT PRIMARY KEY,
+                    artifact_id TEXT NOT NULL,
+                    version INTEGER NOT NULL,
+                    content_hash TEXT NOT NULL,
+                    file_path TEXT NOT NULL,
+                    change_note TEXT NOT NULL DEFAULT '',
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(artifact_id, version),
+                    FOREIGN KEY(artifact_id) REFERENCES creative_artifacts(id)
+                );
                 """
             )
             self._add_column_if_missing(
@@ -233,6 +315,18 @@ class Database:
                     ON assets(session_id, created_at);
                 CREATE INDEX IF NOT EXISTS idx_assets_task
                     ON assets(task_id, created_at);
+                CREATE INDEX IF NOT EXISTS idx_creative_projects_updated
+                    ON creative_projects(updated_at DESC);
+                CREATE INDEX IF NOT EXISTS idx_creative_projects_session
+                    ON creative_projects(session_id, updated_at DESC);
+                CREATE INDEX IF NOT EXISTS idx_project_threads_project
+                    ON project_threads(project_id, role);
+                CREATE INDEX IF NOT EXISTS idx_workflow_runs_project
+                    ON workflow_runs(project_id, created_at);
+                CREATE INDEX IF NOT EXISTS idx_workflow_steps_run
+                    ON workflow_step_runs(workflow_run_id, sort_order);
+                CREATE INDEX IF NOT EXISTS idx_creative_artifacts_project
+                    ON creative_artifacts(project_id, kind);
 
                 INSERT OR IGNORE INTO sessions (id, title, codex_thread_id, status)
                     SELECT id, title, thread, 'idle' FROM conversations;

@@ -76,3 +76,20 @@ def test_codex_binary_falls_back_to_path_command(monkeypatch, tmp_path) -> None:
     monkeypatch.setattr("app.core.config.shutil.which", lambda _: str(path_binary))
 
     assert _resolve_codex_binary(tmp_path) == path_binary
+
+
+def test_codex_binary_uses_complete_standard_installation(monkeypatch, tmp_path) -> None:
+    bundled = tmp_path / "vendor" / "codex" / "bin" / "codex-aarch64-apple-darwin"
+    bundled.parent.mkdir(parents=True)
+    bundled.touch()
+    installed = tmp_path / "ChatGPT.app" / "Contents" / "Resources" / "codex"
+    installed.parent.mkdir(parents=True)
+    installed.touch()
+    (installed.parent / "codex-code-mode-host").touch()
+    monkeypatch.delenv("CODEX_BINARY", raising=False)
+    monkeypatch.setattr(
+        "app.core.config._installed_codex_candidates", lambda: (installed,)
+    )
+    monkeypatch.setattr("app.core.config.shutil.which", lambda _: None)
+
+    assert _resolve_codex_binary(tmp_path) == installed

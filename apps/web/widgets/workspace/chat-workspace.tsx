@@ -3,9 +3,11 @@
 import { Bot, Menu, Plus } from "lucide-react";
 import { useState } from "react";
 import { ChatComposer } from "../../features/chat/components/chat-composer";
+import type { AgentTask } from "../../features/chat/components/chat-composer";
 import { ConversationSidebar } from "../../features/chat/components/conversation-sidebar";
 import { MessageList } from "../../features/chat/components/message-list";
 import { useConversation } from "../../features/chat/hooks/use-conversation";
+import { useDirectorWorkflow } from "../../features/creative-projects/hooks/use-director-workflow";
 import { InspirationView } from "../../features/inspiration/components/inspiration-view";
 import { ModelSettings } from "../../features/models/components/model-settings";
 import { useModelSettings } from "../../features/models/hooks/use-model-settings";
@@ -19,10 +21,23 @@ export function ChatWorkspace() {
   const [input, setInput] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [creativeProjectId, setCreativeProjectId] = useState<string | null>(null);
+  const [agentTask, setAgentTask] = useState<AgentTask>("chat");
+  const [chapterCount, setChapterCount] = useState(6);
+  const [targetWords, setTargetWords] = useState(6000);
   const selected = models.selectedModel;
+  const director = useDirectorWorkflow(async (prompt, projectId) => {
+    setCreativeProjectId(projectId);
+    await chat.sendMessage(
+      prompt,
+      selected ?? { id: "codex-local-default", providerId: "codex_local" },
+      projectId,
+    );
+  });
   const canSend =
     !chat.loading &&
     !models.loading &&
+    !director.loading &&
     (selected?.providerId === "volcengine"
       ? selected.configured && selected.integrationStatus === "ready"
       : connected);
@@ -31,13 +46,26 @@ export function ChatWorkspace() {
     if (chat.isSending) return;
     chat.newConversation();
     setInput("");
+    setCreativeProjectId(null);
     setSidebarOpen(false);
   }
   function send() {
     if (!input.trim() || !canSend || chat.isSending) return;
+    if (agentTask === "script" && !creativeProjectId) {
+      const idea = input;
+      setInput("");
+      void director.createNovelProject({
+        idea,
+        chapterCount,
+        targetWords,
+        sessionId: chat.conversationId,
+      });
+      return;
+    }
     void chat.sendMessage(
       input,
       selected ?? { id: "codex-local-default", providerId: "codex_local" },
+      creativeProjectId,
     );
     setInput("");
   }
@@ -45,13 +73,21 @@ export function ChatWorkspace() {
     <ChatComposer
       compact={chat.messages.length > 0}
       value={input}
-      modelName={selected?.name ?? "本地 Codex Agent"}
+      models={models.models}
+      selectedModelId={models.selectedId}
+      agentTask={agentTask}
+      chapterCount={chapterCount}
+      targetWords={targetWords}
       canSend={canSend}
       sending={chat.isSending}
       onChange={setInput}
       onSend={send}
       onStop={chat.interrupt}
       onSettings={() => setSettingsOpen(true)}
+      onModelChange={(id) => void models.selectModel(id)}
+      onAgentTaskChange={setAgentTask}
+      onChapterCountChange={setChapterCount}
+      onTargetWordsChange={setTargetWords}
     />
   );
 
@@ -98,7 +134,7 @@ export function ChatWorkspace() {
           <InspirationView
             connected={connected}
             composer={composer}
-            notice={chat.notice}
+            notice={director.notice || chat.notice}
             onMenu={() => setSidebarOpen(true)}
             onPrompt={setInput}
           />
