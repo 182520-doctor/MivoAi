@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
+from app.api.routes.creative_projects import create_creative_project_router
 from app.composition import build_container
 from app.contexts.assets.routes import create_asset_router
 from app.contexts.conversations.ports import CodexClient
@@ -57,6 +58,7 @@ def create_app(
     asset_service = container.asset_service
     workflow_service = container.workflow_service
     drama_service = container.drama_service
+    creative_project_service = container.creative_project_service
 
     @asynccontextmanager
     async def lifespan(api: FastAPI):
@@ -90,6 +92,7 @@ def create_app(
     api.state.asset_service = asset_service
     api.state.workflow_service = workflow_service
     api.state.drama_service = drama_service
+    api.state.creative_project_service = creative_project_service
     api.state.container = container
     api.add_middleware(
         TrustedHostMiddleware, allowed_hosts=list(app_settings.allowed_hosts)
@@ -112,7 +115,15 @@ def create_app(
     )
     register_exception_handlers(api)
     api.include_router(create_status_router(codex_client))
-    api.include_router(create_conversation_router(conversation_service))
+    api.include_router(
+        create_conversation_router(
+            conversation_service,
+            app_settings.allowed_origins,
+        )
+    )
+    api.include_router(
+        create_creative_project_router(creative_project_service)
+    )
     api.include_router(create_provider_router(provider_service))
     api.include_router(create_generation_router(generation_service))
     api.include_router(create_media_processing_router(media_processing_service))

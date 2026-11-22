@@ -22,3 +22,5 @@ class ActiveTurn:
     task: asyncio.Task[None] | None = None
     route: TextModelRoute | None = None
     generation_task_id: str | None = None
+    project_id: str | None = None
+    workspace_path: str | None = None

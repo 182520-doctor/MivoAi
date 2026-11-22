@@ -13,4 +13,5 @@ class SendMessageCommand:
     client_message_id: str
     provider_id: str
     model_id: str | None
+    creative_project_id: str | None = None
     raw_request: dict[str, object] = field(default_factory=dict)

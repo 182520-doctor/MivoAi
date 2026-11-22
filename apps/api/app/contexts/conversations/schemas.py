@@ -30,6 +30,7 @@ class MessageCreate(BaseModel):
     clientMessageId: str = Field(min_length=1, max_length=100)
     providerId: str = Field(default="codex_local", max_length=80)
     modelId: str | None = Field(default=None, max_length=160)
+    projectId: str | None = Field(default=None, max_length=100)
 
     @field_validator("message")
     @classmethod
@@ -46,6 +47,7 @@ class MessageCreate(BaseModel):
             client_message_id=self.clientMessageId,
             provider_id=self.providerId,
             model_id=self.modelId,
+            creative_project_id=self.projectId,
             raw_request=self.model_dump(by_alias=True),
         )
 

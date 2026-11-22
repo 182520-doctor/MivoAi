@@ -2,6 +2,7 @@ from fastapi.testclient import TestClient
 
 from app.main import create_app
 from tests.fakes import FakeCodexClient
+from tests.test_conversations import send_turn
 
 
 def test_health_reports_app_server(tmp_path) -> None:
@@ -31,13 +32,13 @@ def test_unconfigured_video_model_is_rejected_before_task_creation(tmp_path) -> 
     app = create_app(FakeCodexClient(), database_path=tmp_path / "test.db")
     with TestClient(app) as client:
         conversation_id = client.post("/api/conversations").json()["id"]
-        response = client.post(
-            f"/api/conversations/{conversation_id}/messages",
-            json={
+        events = send_turn(
+            client, conversation_id,
+            {
                 "message": "请生成视频",
                 "clientMessageId": "video-1",
                 "providerId": "volcengine",
                 "modelId": "volc-seedance-2-5",
             },
         )
-        assert response.status_code == 400
+        assert events[-1]["code"] == 400

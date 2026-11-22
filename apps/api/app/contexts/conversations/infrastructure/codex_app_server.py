@@ -41,6 +41,7 @@ class CodexAppServerClient:
         self.process: asyncio.subprocess.Process | None = None
         self.server_info: dict[str, Any] | None = None
         self.account: dict[str, Any] | None = None
+        self.requires_openai_auth: bool | None = None
         self.dynamic_tools = list(dynamic_tools or [])
         self.dynamic_tool_handler = dynamic_tool_handler
 
@@ -69,7 +70,7 @@ class CodexAppServerClient:
 
     @property
     def authenticated(self) -> bool:
-        return self.account is not None
+        return self.account is not None or self.requires_openai_auth is False
 
     def _log_protocol(self, direction: str, payload: Any) -> None:
         """Write one sanitized protocol record to both console and log file."""
@@ -85,8 +86,17 @@ class CodexAppServerClient:
         async with self._start_lock:
             if self.running:
                 return
+            self.account = None
+            self.requires_openai_auth = None
             if not self.binary.is_file():
                 raise AppServerError(f"Codex binary not found: {self.binary}")
+            host = self._code_mode_host_path()
+            if not host.is_file():
+                raise AppServerError(
+                    "Codex 执行组件缺失："
+                    f"{host}。请安装与当前 Codex 版本和平台匹配的 "
+                    "codex-code-mode-host，或通过 CODEX_BINARY 指向完整的 Codex 安装。"
+                )
 
             self.workspace.mkdir(parents=True, exist_ok=True)
             self._loaded_threads.clear()
@@ -107,11 +117,7 @@ class CodexAppServerClient:
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
                 cwd=self.workspace,
-                creationflags=(
-                    subprocess.CREATE_NO_WINDOW
-                    if os.name == "nt"
-                    else 0
-                ),
+                **_subprocess_startup_options(),
             )
             self._log_protocol(
                 "lifecycle",
@@ -136,12 +142,17 @@ class CodexAppServerClient:
                 "account/read", {"refreshToken": False}, timeout=20
             )
             self.account = account_result.get("account")
+            self.requires_openai_auth = account_result.get(
+                "requiresOpenaiAuth"
+            )
 
     async def stop(self) -> None:
         """Stop App Server and release background reader tasks."""
 
         process = self.process
         self.process = None
+        self.account = None
+        self.requires_openai_auth = None
         if process and process.returncode is None:
             process.terminate()
             try:
@@ -188,13 +199,14 @@ class CodexAppServerClient:
 
     async def create_thread(
         self,
+        workspace: Path | None = None,
         *,
         cwd: Path | None = None,
         shared_roots: list[Path] | None = None,
     ) -> str:
         """Create a persistent, read-only Codex thread for creative conversation."""
 
-        thread_cwd = (cwd or self.workspace).resolve()
+        thread_cwd = (workspace or cwd or self.workspace).resolve()
         thread_cwd.mkdir(parents=True, exist_ok=True)
         workspace_roots = [str(thread_cwd)]
         workspace_roots.extend(
@@ -236,6 +248,7 @@ class CodexAppServerClient:
         self,
         message: str,
         thread_id: str | None,
+        workspace: Path | None = None,
         *,
         cwd: Path | None = None,
         shared_roots: list[Path] | None = None,
@@ -243,8 +256,9 @@ class CodexAppServerClient:
         """Start one turn and normalize relevant App Server notifications."""
 
         await self.start()
+        active_cwd = workspace or cwd
         active_thread_id = thread_id or await self.create_thread(
-            cwd=cwd,
+            cwd=active_cwd,
             shared_roots=shared_roots,
         )
 
@@ -258,7 +272,7 @@ class CodexAppServerClient:
                     "excludeTurns": True,
                     "sandbox": "read-only",
                     "approvalPolicy": "never",
-                    "cwd": str((cwd or self.workspace).resolve()),
+                    "cwd": str((active_cwd or self.workspace).resolve()),
                 },
             )
             self._loaded_threads.add(thread_id)
@@ -271,6 +285,9 @@ class CodexAppServerClient:
                 {
                     "threadId": active_thread_id,
                     "input": [{"type": "text", "text": message}],
+                    "cwd": str((active_cwd or self.workspace).resolve()),
+                    "approvalPolicy": "never",
+                    "sandboxPolicy": self._workspace_sandbox_policy(active_cwd),
                     "environments": [],
                 },
                 timeout=30,
@@ -511,9 +528,31 @@ class CodexAppServerClient:
         return {
             "running": self.running,
             "authenticated": self.authenticated,
+            "accountAuthenticated": self.account is not None,
+            "requiresOpenaiAuth": self.requires_openai_auth,
             "version": self.server_info.get("userAgent") if self.server_info else None,
             "platform": self.server_info.get("platformOs") if self.server_info else None,
             "binary": str(self.binary),
+            "codeModeHost": str(self._code_mode_host_path()),
+            "codeModeHostAvailable": self._code_mode_host_path().is_file(),
+        }
+
+    def _code_mode_host_path(self) -> Path:
+        suffix = ".exe" if os.name == "nt" else ""
+        return self.binary.parent / f"codex-code-mode-host{suffix}"
+
+    def _workspace_sandbox_policy(
+        self,
+        workspace: Path | None,
+    ) -> dict[str, Any]:
+        writable_root = (workspace or self.workspace).resolve()
+        writable_root.mkdir(parents=True, exist_ok=True)
+        return {
+            "type": "workspaceWrite",
+            "writableRoots": [str(writable_root)],
+            "networkAccess": False,
+            "excludeTmpdirEnvVar": False,
+            "excludeSlashTmp": False,
         }
 
 
@@ -547,3 +586,14 @@ def _extract_text_from_list(values: list[Any]) -> list[str]:
             elif isinstance(text, list):
                 fragments.extend(_extract_text_from_list(text))
     return fragments
+
+
+def _subprocess_startup_options() -> dict[str, int]:
+    if os.name != "nt":
+        return {}
+    create_no_window = getattr(subprocess, "CREATE_NO_WINDOW", None)
+    return (
+        {"creationflags": create_no_window}
+        if create_no_window is not None
+        else {}
+    )

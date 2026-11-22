@@ -19,6 +19,7 @@ class FakeCodexClient:
 
     async def create_thread(
         self,
+        workspace: Path | None = None,
         *,
         cwd: Path | None = None,
         shared_roots: list[Path] | None = None,
@@ -37,6 +38,7 @@ class FakeCodexClient:
         self,
         message: str,
         thread_id: str | None,
+        workspace: Path | None = None,
         *,
         cwd: Path | None = None,
         shared_roots: list[Path] | None = None,

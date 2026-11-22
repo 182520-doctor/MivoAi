@@ -18,6 +18,8 @@ from app.contexts.conversations.ports import (
     ConversationModelGateway,
     ConversationRepositoryPort,
     ConversationTaskRecorder,
+    ConversationWorkspaceQualityGate,
+    CreativeProjectGateway,
 )
 from app.contexts.conversations.runtime import ActiveTurn
 from app.contexts.conversations.workspace import ConversationWorkspaceManager
@@ -58,6 +60,8 @@ class ConversationService:
         model_gateway: ConversationModelGateway | None = None,
         task_recorder: ConversationTaskRecorder | None = None,
         workspace_manager: ConversationWorkspaceManager | None = None,
+        creative_projects: CreativeProjectGateway | None = None,
+        quality_gate: ConversationWorkspaceQualityGate | None = None,
     ) -> None:
         self._repository = repository
         self._codex = codex_client
@@ -65,6 +69,8 @@ class ConversationService:
         self._models = model_gateway
         self._task_recorder = task_recorder
         self._workspace_manager = workspace_manager
+        self._creative_projects = creative_projects
+        self._quality_gate = quality_gate
 
     def list_conversations(self) -> list[dict[str, Any]]:
         return [
@@ -160,6 +166,14 @@ class ConversationService:
                 command.provider_id, command.model_id
             )
 
+        project = None
+        if command.creative_project_id and self._creative_projects:
+            project = self._creative_projects.get_project(
+                command.creative_project_id
+            )
+            if not project:
+                raise ConversationNotFoundError("创作项目不存在")
+
         self._repository.start_submission(command.client_message_id, conversation_id)
         turn = self._repository.create_turn_with_messages(
             conversation_id, command.client_message_id, command.message
@@ -171,6 +185,9 @@ class ConversationService:
             assistant_message_id=turn.assistant_message_id,
         )
         active_turn.route = route
+        if project:
+            active_turn.project_id = command.creative_project_id
+            active_turn.workspace_path = str(project["workspacePath"])
         if route and self._task_recorder:
             active_turn.generation_task_id = self._task_recorder.start_text_task(
                 conversation_id=conversation_id,
@@ -203,6 +220,7 @@ class ConversationService:
         await active_turn.queue.put({"type": "done", "status": "interrupted"})
         if active_turn.task:
             active_turn.task.cancel()
+            await asyncio.gather(active_turn.task, return_exceptions=True)
         return "interrupt_requested"
 
     def _require_conversation(self, conversation_id: str) -> Conversation:
@@ -225,8 +243,8 @@ class ConversationService:
                 await self._run_http_model_turn(command, active_turn, active_turn.route)
                 return
             await self._codex.start()
-            workspace_path = conversation.workspace_path
-            if self._workspace_manager:
+            workspace_path = active_turn.workspace_path or conversation.workspace_path
+            if self._workspace_manager and not active_turn.project_id:
                 workspace = self._workspace_manager.ensure(conversation.id)
                 workspace_path = str(workspace)
                 if conversation.workspace_path != workspace_path:
@@ -240,11 +258,16 @@ class ConversationService:
                 if self._workspace_manager
                 else None
             )
+            project_thread = (
+                self._creative_projects.get_thread(active_turn.project_id)
+                if active_turn.project_id and self._creative_projects
+                else None
+            )
             needs_tool_thread = (
                 not conversation.thread_id
                 or conversation.tool_runtime_version < TOOL_RUNTIME_VERSION
             )
-            thread_id = (
+            thread_id = project_thread or (
                 await self._codex.create_thread(
                     cwd=workspace,
                     shared_roots=shared_roots,
@@ -266,6 +289,11 @@ class ConversationService:
                     title,
                     tool_runtime_version=TOOL_RUNTIME_VERSION,
                 )
+            if active_turn.project_id and self._creative_projects:
+                self._creative_projects.attach_thread(
+                    active_turn.project_id,
+                    thread_id,
+                )
 
             async for event in self._codex.chat(
                 command.message,
@@ -274,11 +302,18 @@ class ConversationService:
                 shared_roots=shared_roots,
             ):
                 if event["type"] == "meta":
+                    active_turn.thread_id = event["threadId"]
                     active_turn.turn_id = event["turnId"]
                     self._repository.set_codex_turn(
                         active_turn.local_turn_id or "", active_turn.turn_id
                     )
                     event["assistantMessageId"] = active_turn.assistant_message_id
+                    self._repository.attach_thread(
+                        conversation.id,
+                        active_turn.thread_id,
+                        title,
+                        tool_runtime_version=TOOL_RUNTIME_VERSION,
+                    )
                 if event["type"] == "delta" and event.get("text"):
                     self._repository.append_assistant_content(
                         active_turn.assistant_message_id or "", event["text"]
@@ -286,6 +321,15 @@ class ConversationService:
                 if event["type"] == "message_completed":
                     self._repository.replace_assistant_content(
                         active_turn.assistant_message_id or "", event.get("text", "")
+                    )
+                if event["type"] == "output":
+                    self._repository.replace_assistant_content(
+                        active_turn.assistant_message_id or "",
+                        str(event.get("content") or ""),
+                    )
+                    self._repository.replace_reasoning(
+                        active_turn.local_turn_id or "",
+                        str(event.get("reasoning") or ""),
                     )
                 if event["type"] == "reasoning_delta" and event.get("text"):
                     self._repository.append_reasoning(
@@ -302,6 +346,37 @@ class ConversationService:
                 if event["type"] == "error":
                     error_message = str(event.get("message") or "Codex 回复失败")
                 await active_turn.queue.put(event)
+            if (
+                active_turn.project_id
+                and active_turn.workspace_path
+                and self._creative_projects
+            ):
+                project_workspace = Path(active_turn.workspace_path)
+                if self._quality_gate:
+                    quality = self._quality_gate.inspect(project_workspace)
+                    self._quality_gate.write_report(project_workspace, quality)
+                else:
+                    quality = {}
+                sync = self._creative_projects.reconcile_workspace(
+                    active_turn.project_id
+                )
+                document_url = (
+                    f"/api/creative-projects/{active_turn.project_id}/files/"
+                    "exports/novel-project.md"
+                )
+                self._repository.append_assistant_content(
+                    active_turn.assistant_message_id or "",
+                    f"\n\n[打开完整项目文档]({document_url})",
+                )
+                await active_turn.queue.put(
+                    {
+                        "type": "project_sync",
+                        "projectId": active_turn.project_id,
+                        "documentUrl": document_url,
+                        "quality": quality,
+                        **sync,
+                    }
+                )
         except Exception as exc:  # noqa: BLE001 - transport errors become terminal SSE events
             error_message = str(exc)
             await active_turn.queue.put({"type": "error", "message": str(exc)})

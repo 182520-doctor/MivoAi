@@ -24,6 +24,7 @@ class CodexClient(Protocol):
 
     async def create_thread(
         self,
+        workspace: Path | None = None,
         *,
         cwd: Path | None = None,
         shared_roots: list[Path] | None = None,
@@ -40,6 +41,7 @@ class CodexClient(Protocol):
         self,
         message: str,
         thread_id: str | None,
+        workspace: Path | None = None,
         *,
         cwd: Path | None = None,
         shared_roots: list[Path] | None = None,
@@ -85,6 +87,30 @@ class ConversationTaskRecorder(Protocol):
         status: str,
         route: TextModelRoute,
         error: str | None = None,
+    ) -> None: ...
+
+
+class CreativeProjectGateway(Protocol):
+    """Optional bridge to the long-lived creative-project workspace."""
+
+    def get_project(self, project_id: str) -> dict[str, Any] | None: ...
+
+    def get_thread(self, project_id: str) -> str | None: ...
+
+    def attach_thread(self, project_id: str, codex_thread_id: str) -> None: ...
+
+    def reconcile_workspace(self, project_id: str) -> dict[str, object]: ...
+
+
+class ConversationWorkspaceQualityGate(Protocol):
+    """Optional quality inspection for creative-project workspaces."""
+
+    def inspect(self, workspace: Path) -> dict[str, object]: ...
+
+    def write_report(
+        self,
+        workspace: Path,
+        quality: dict[str, object],
     ) -> None: ...
 
 

@@ -24,6 +24,7 @@ class Settings:
     secret_key_path: Path
     asset_dir: Path
     drama_workspace: Path
+    creative_workspace_dir: Path
     protocol_logging_enabled: bool
     allowed_hosts: tuple[str, ...] = ("127.0.0.1", "localhost", "testserver")
     allowed_origins: tuple[str, ...] = (
@@ -37,7 +38,7 @@ class Settings:
         """Build settings once at application startup, with local-safe defaults."""
 
         project_root = Path(__file__).resolve().parents[4]
-        codex_binary = _discover_codex_binary(project_root)
+        codex_binary = _resolve_codex_binary(project_root)
         return cls(
             project_root=project_root,
             codex_binary=codex_binary,
@@ -64,21 +65,89 @@ class Settings:
             drama_workspace=Path(
                 os.getenv("ZAOJING_DRAMA_WORKSPACE", project_root / "runtime/drama")
             ),
+            creative_workspace_dir=Path(
+                os.getenv(
+                    "ZAOJING_CREATIVE_WORKSPACE_DIR",
+                    project_root / "runtime/creative-projects",
+                )
+            ),
             api_port=int(os.getenv("ZAOJING_API_PORT", "8010")),
         )
 
 
-def _discover_codex_binary(project_root: Path) -> Path:
-    """Use an explicit path, the vendored binary, or the installed Codex CLI."""
-
+def _resolve_codex_binary(project_root: Path) -> Path:
     configured = os.getenv("CODEX_BINARY")
     if configured:
-        return Path(configured)
-    vendored = project_root / "vendor/codex/bin/codex-aarch64-apple-darwin"
-    if vendored.is_file():
-        return vendored
-    for executable in ("codex.exe", "codex"):
-        discovered = shutil.which(executable)
-        if discovered:
-            return Path(discovered)
-    return vendored
+        configured_path = Path(configured).expanduser()
+        resolved = shutil.which(configured)
+        return Path(resolved) if resolved else configured_path
+
+    bundled_fallback: Path | None = None
+    for candidate in _bundled_codex_candidates(project_root):
+        if not candidate.is_file():
+            continue
+        bundled_fallback = bundled_fallback or candidate
+        if _has_code_mode_host(candidate):
+            return candidate
+
+    # GUI launchers such as PyCharm often have a minimal PATH. Probe standard
+    # application bundle locations so a complete Codex installation is still
+    # discovered without machine-specific configuration.
+    for candidate in _installed_codex_candidates():
+        if candidate.is_file() and _has_code_mode_host(candidate):
+            return candidate
+
+    path_fallback: Path | None = None
+    for command in _path_codex_commands():
+        resolved = shutil.which(command)
+        if not resolved:
+            continue
+        path_candidate = type(project_root)(resolved)
+        path_fallback = path_fallback or path_candidate
+        if _has_code_mode_host(path_candidate):
+            return path_candidate
+
+    if bundled_fallback:
+        return bundled_fallback
+
+    if path_fallback:
+        return path_fallback
+
+    return _bundled_codex_candidates(project_root)[0]
+
+
+def _has_code_mode_host(binary: Path) -> bool:
+    """Check whether a Codex installation includes its tool execution companion."""
+
+    suffix = ".exe" if os.name == "nt" else ""
+    # Preserve the concrete Path flavor in tests that emulate another OS.
+    parent = type(binary)(os.path.dirname(str(binary)))
+    return (parent / f"codex-code-mode-host{suffix}").is_file()
+
+
+def _bundled_codex_candidates(project_root: Path) -> tuple[Path, ...]:
+    bin_dir = project_root / "vendor" / "codex" / "bin"
+    if os.name == "nt":
+        names = ("codex-x86_64-pc-windows-msvc.exe", "codex.exe", "codex.cmd")
+    elif os.uname().sysname == "Darwin":
+        names = ("codex-aarch64-apple-darwin", "codex-x86_64-apple-darwin", "codex")
+    else:
+        names = ("codex-x86_64-unknown-linux-musl", "codex-x86_64-unknown-linux-gnu", "codex")
+    return tuple(bin_dir / name for name in names)
+
+
+def _installed_codex_candidates() -> tuple[Path, ...]:
+    if os.name == "nt":
+        return ()
+    if os.uname().sysname != "Darwin":
+        return ()
+    return (
+        Path("/Applications/ChatGPT.app/Contents/Resources/codex"),
+        Path("/Applications/Codex.app/Contents/Resources/codex"),
+    )
+
+
+def _path_codex_commands() -> tuple[str, ...]:
+    if os.name == "nt":
+        return ("codex.cmd", "codex.exe", "codex")
+    return ("codex",)

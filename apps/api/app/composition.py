@@ -45,11 +45,14 @@ from app.contexts.providers.infrastructure.volcengine import VolcengineChatClien
 from app.contexts.providers.repository import ProviderRepository
 from app.contexts.workflows.application import WorkflowService
 from app.contexts.workflows.repository import ComfyWorkflowRepository
+from app.db.repositories import CreativeProjectRepository
 from app.infrastructure.persistence.database import Database
 from app.interfaces.agent_media_tools import (
     AgentMediaToolService,
     media_dynamic_tool_specs,
 )
+from app.services.creative_project_service import CreativeProjectService
+from app.services.quality_gate_service import QualityGateService
 from app.shared.config import Settings
 from app.shared.secrets import SecretBox
 
@@ -68,6 +71,7 @@ class ApplicationContainer:
     asset_service: AssetService
     workflow_service: WorkflowService
     drama_service: DramaProjectService
+    creative_project_service: CreativeProjectService
 
 
 def build_container(
@@ -84,6 +88,7 @@ def build_container(
     database = Database(database_path or settings.database_path)
 
     conversation_repository = ConversationRepository(database)
+    creative_repository = CreativeProjectRepository(database)
     provider_repository = ProviderRepository(database)
     generation_repository = GenerationTaskRepository(database)
     asset_repository = AssetRepository(database)
@@ -157,6 +162,12 @@ def build_container(
         provider_service,
         generation_service,
         workspace_manager,
+        creative_projects=creative_repository,
+        quality_gate=QualityGateService(),
+    )
+    creative_project_service = CreativeProjectService(
+        creative_repository,
+        settings.creative_workspace_dir,
     )
     return ApplicationContainer(
         settings=settings,
@@ -169,4 +180,5 @@ def build_container(
         asset_service=asset_service,
         workflow_service=workflow_service,
         drama_service=drama_service,
+        creative_project_service=creative_project_service,
     )
