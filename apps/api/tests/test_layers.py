@@ -1,7 +1,7 @@
-from app.core.security import is_origin_allowed
-from app.db.database import Database
-from app.db.repositories import ConversationRepository
-from app.utils.codex_history import normalize_history
+from app.contexts.conversations.infrastructure.history import normalize_history
+from app.contexts.conversations.infrastructure.repository import ConversationRepository
+from app.infrastructure.persistence.database import Database
+from app.shared.security import is_origin_allowed
 
 
 def test_repository_persists_conversation_and_submission(tmp_path) -> None:

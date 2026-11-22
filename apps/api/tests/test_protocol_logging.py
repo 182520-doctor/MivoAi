@@ -1,4 +1,7 @@
-from app.core.protocol_logging import redact_protocol_value
+import io
+import logging
+
+from app.shared.protocol_logging import SafeStreamHandler, redact_protocol_value
 
 
 def test_protocol_logging_redacts_sensitive_fields():
@@ -13,3 +16,24 @@ def test_protocol_logging_redacts_sensitive_fields():
     assert redacted["account"]["accessToken"] == "[REDACTED]"
     assert redacted["params"]["refreshToken"] == "[REDACTED]"
     assert redacted["params"]["message"] == "你好"
+
+
+def test_protocol_console_handler_survives_unencodable_text():
+    raw = io.BytesIO()
+    stream = io.TextIOWrapper(raw, encoding="gbk")
+    handler = SafeStreamHandler(stream)
+    handler.setFormatter(logging.Formatter("%(message)s"))
+    record = logging.LogRecord(
+        "test",
+        logging.INFO,
+        __file__,
+        1,
+        "启动失败：\ufffd",
+        (),
+        None,
+    )
+
+    handler.emit(record)
+    stream.flush()
+
+    assert raw.getvalue()

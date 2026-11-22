@@ -16,6 +16,9 @@
 - 前端只访问同源 `/api`，不暴露 App Server
 - 火山方舟文本/多模态 Chat API 接入，支持用户在页面配置自己的 API Key
 - Provider/Model 目录、模型偏好、凭证密文和 `generation_tasks` 请求审计
+- 独立模型中心：能力筛选、默认模型切换、凭证配置和真实连接测试
+- 本地 ComfyUI 接入：Flux 文生图和 Wan 文生视频，任务、进度与素材闭环
+- ComfyUI 工作流扫描、导入、API 图转换、真实测试和模型启用管理
 
 ## 架构
 
@@ -23,24 +26,36 @@
 Browser
   -> Next.js (127.0.0.1:3000)
   -> /api rewrite
-  -> FastAPI (127.0.0.1:8000)
+  -> FastAPI (127.0.0.1:8010)
   -> Codex App Server (stdio / JSON-RPC)
   -> Codex account and remote model
 ```
 
 关键目录：
 
-- `apps/web`：Next.js 前端
-- `apps/api/app/api`：FastAPI 路由和 HTTP 异常转换
-- `apps/api/app/services`：会话业务流程和 Codex App Server 集成
-- `apps/api/app/db`：SQLite 连接、schema 迁移和 Repository
-- `apps/api/app/models`：请求、领域对象和事件类型
-- `apps/api/app/core`：配置、接口、异常、安全和协议日志
-- `apps/api/app/utils`：SSE 编码和 Codex 历史格式转换
+- `apps/web/app/_features`：前端功能域、API 客户端、SSE 解析和状态 Hook
+- `apps/web/app/_components`：工作台、会话、消息和设置等展示组件
+- `apps/web/app/_shared`：前端通用 HTTP 客户端
+- `apps/web/app/page.tsx`：仅作为路由入口，渲染客户端工作台
+- `apps/api/app/contexts`：按限界上下文拆分的业务模块
+  - `conversations`：会话、Agent 运行时和流式回复
+  - `providers`：供应商目录、凭证、文本路由和媒体 Adapter
+  - `media_generation`：统一图片/视频生成任务
+  - `assets`：素材登记、下载和内容访问
+  - `system`：健康检查和兼容接口
+- `apps/api/app/shared`：配置、错误、SSE、安全、凭证加密等共享内核
+- `apps/api/app/infrastructure/persistence`：SQLite 连接和结构初始化
+- `apps/api/app/interfaces`：共享 HTTP 异常转换
+- `apps/api/app/composition.py`：依赖装配入口，只有这里绑定具体实现
+- `apps/api/app/main.py`：FastAPI 应用工厂和路由注册
 - `vendor/codex`：固定版本的官方 Codex 可执行文件、压缩包和协议 schema
 - `scripts`：启动和真实链路验收脚本
 
-完整的分层规范和调用流程见 [`docs/backend-architecture.md`](docs/backend-architecture.md)。
+完整的 DDD 模块边界、依赖规则和调用流程见
+[`docs/backend-architecture.md`](docs/backend-architecture.md)。
+
+前端功能域、组件和状态边界见
+[`docs/frontend-architecture.md`](docs/frontend-architecture.md)。
 
 数据库表结构说明见 [`docs/sqlite-schema.md`](docs/sqlite-schema.md)。
 
@@ -48,15 +63,27 @@ Browser
 
 多模型网关设计见 [`docs/multi-model-gateway-design.md`](docs/multi-model-gateway-design.md)。
 
+ComfyUI 工作流模型管理见
+[`docs/comfyui-workflow-management.md`](docs/comfyui-workflow-management.md)。
+
+Codex + ComfyUI 多模态工作台与短剧工作台的 DDD 技术方案见
+[`docs/agent-media-studio-ddd-design.md`](docs/agent-media-studio-ddd-design.md)。
+
 ## 一键启动
 
 在仓库根目录运行：
 
 ```bash
-python scripts/start_local.py
+uv run python scripts/start_local.py
 ```
 
-看到 `Website: http://127.0.0.1:3000` 后，在浏览器打开 <http://127.0.0.1:3000>。启动窗口需保持打开，按 `Ctrl+C` 会同时停止前后端。
+启动脚本默认使用 3000/8010；端口被占用时会自动选择下一个可用端口，并同步 Next.js
+代理地址。看到 `Website: http://127.0.0.1:<port>` 后打开对应地址。启动窗口需保持打开，
+按 `Ctrl+C` 会同时停止前后端。Windows 上的构建、API 与 Web 子进程使用隐藏窗口启动，
+不会再额外弹出 CMD 控制台。
+
+一键启动默认使用生产构建并通过 `next start` 运行。需要前端热更新时，设置
+`ZAOJING_WEB_MODE=dev`，并确保同一项目没有其他 `next dev` 实例。
 
 ## 手动启动
 
@@ -64,7 +91,7 @@ python scripts/start_local.py
 
 ```bash
 cd /Users/hwx/Documents/Codex/2026-09-04/an/work/ai-dev-starter/apps/api
-uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
+uv run uvicorn app.main:app --host 127.0.0.1 --port 8010
 ```
 
 前端：
@@ -115,4 +142,6 @@ tail -f runtime/logs/codex-protocol.log
 
 ## 当前边界
 
-这是第一阶段 Agent MVP，只开放文本沟通。图片生成、视频生成、素材上传、作品库和账号系统属于后续阶段。App Server 虽在本机运行，模型推理仍需要网络和有效的 Codex 账号。
+当前已接通本地 ComfyUI 的 Flux 文生图和 Wan 文生视频。图片/视频参考素材上传、
+图生图、图生视频、音频生成、工作流版本管理和短剧领域模块仍属于后续阶段。
+Codex Agent 对话需要有效的本地 Codex 登录；ComfyUI 媒体生成不依赖 Codex 登录。

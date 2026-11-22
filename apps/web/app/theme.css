@@ -1,0 +1,1791 @@
+:root {
+  --ink: #111111;
+  --muted: #686868;
+  --line: #dddddd;
+  --page: #f4f4f4;
+  --blue: #2d2d2d;
+  --blue-soft: #eeeeee;
+  --surface: #ffffff;
+  --surface-subtle: #f7f7f7;
+  --shadow-sm: 0 8px 24px rgba(0, 0, 0, .055);
+  accent-color: #333333;
+}
+
+body {
+  color: #111111;
+  background: #f3f3f3;
+}
+
+.studio-main {
+  color: #111111;
+}
+
+.studio-main::before {
+  background:
+    linear-gradient(rgba(0, 0, 0, .025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, .025) 1px, transparent 1px);
+}
+
+.studio-sidebar {
+  border-right-color: #dddddd;
+  background: #ffffff;
+  box-shadow: 8px 0 28px rgba(0, 0, 0, .045);
+}
+
+.studio-brand {
+  color: #111111;
+}
+
+.studio-brand-mark {
+  background: #111111;
+  color: #ffffff;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .16);
+}
+
+.studio-brand-copy strong {
+  color: #111111;
+}
+
+.studio-brand-copy small {
+  color: #737373;
+}
+
+.studio-version {
+  border-color: #dedede;
+  background: #f1f1f1;
+  color: #555555;
+}
+
+.studio-create {
+  border-color: #dedede;
+  background: #f4f4f4;
+  color: #222222;
+}
+
+.studio-create:hover {
+  border-color: #b8b8b8;
+  background: #eeeeee;
+}
+
+.studio-create-icon {
+  background: #111111;
+  color: #ffffff;
+}
+
+.studio-create strong {
+  color: #111111;
+}
+
+.studio-create small {
+  color: #737373;
+}
+
+.studio-nav-label {
+  color: #8c8c8c;
+}
+
+.studio-nav-item {
+  color: #555555;
+}
+
+.studio-nav-item svg {
+  color: #777777;
+}
+
+.studio-nav-item:hover {
+  background: #f2f2f2;
+  color: #111111;
+}
+
+.studio-nav-item.active {
+  background: #111111;
+  color: #ffffff;
+  box-shadow: none;
+}
+
+.studio-nav-item.active svg {
+  color: #ffffff;
+}
+
+.studio-theme-switch {
+  border-top-color: #e1e1e1;
+}
+
+.studio-theme-switch > span {
+  color: #707070;
+}
+
+.studio-theme-switch > div {
+  border-color: #dddddd;
+  background: #f3f3f3;
+}
+
+.studio-theme-switch button {
+  color: #777777;
+}
+
+.studio-theme-switch button:hover {
+  color: #111111;
+}
+
+.studio-theme-switch button.active {
+  background: #111111;
+  color: #ffffff;
+  box-shadow: 0 2px 7px rgba(0, 0, 0, .15);
+}
+
+.studio-sidebar-footer {
+  border-top-color: #e2e2e2;
+}
+
+.studio-sidebar-footer strong {
+  color: #222222;
+}
+
+.studio-sidebar-footer small {
+  color: #7a7a7a;
+}
+
+.connection-dot {
+  background: #9a9a9a;
+  box-shadow: 0 0 0 4px #eeeeee;
+}
+
+.connection-dot.online {
+  background: #222222;
+  box-shadow: 0 0 0 4px #ececec;
+}
+
+.page-heading h1,
+.drama-studio-heading h1 {
+  color: #111111;
+}
+
+.page-heading p,
+.drama-studio-heading p {
+  color: #686868;
+}
+
+.eyebrow {
+  border-color: #d8d8d8;
+  background: #f1f1f1;
+  color: #444444;
+}
+
+.workspace-card.media {
+  border-color: #242424;
+  background:
+    radial-gradient(circle at 92% 4%, rgba(255, 255, 255, .12), transparent 35%),
+    linear-gradient(145deg, #111111, #282828);
+}
+
+.workspace-card.drama {
+  border-color: #3a3a3a;
+  background:
+    radial-gradient(circle at 92% 4%, rgba(255, 255, 255, .1), transparent 36%),
+    linear-gradient(145deg, #2c2c2c, #171717);
+}
+
+.workspace-card-icon,
+.quick-icon,
+.agent-entry-icon,
+.capability-map-head svg,
+.panel-heading svg {
+  background: #ededed;
+  color: #222222;
+}
+
+.agent-entry-card,
+.capability-map,
+.workbench-panel,
+.model-card,
+.asset-library-card,
+.task-center-row,
+.quick-actions > button,
+.gallery-item,
+.composer,
+.history-drawer,
+.settings-drawer {
+  border-color: #dedede;
+  background: #ffffff;
+  color: #111111;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .045);
+}
+
+.quick-actions > button:hover,
+.agent-entry-card:hover,
+.asset-library-card:hover,
+.task-center-row:hover {
+  border-color: #b7b7b7;
+  background: #fafafa;
+}
+
+.compact-action,
+.tool-pill,
+.status-chip,
+.home-history,
+.server-state {
+  border-color: #d7d7d7;
+  background: #ffffff;
+  color: #4f4f4f;
+}
+
+.send-button,
+.save-settings,
+.primary-action {
+  background: #111111;
+  color: #ffffff;
+}
+
+.send-button:hover:not(:disabled) {
+  background: #3a3a3a;
+}
+
+.drama-project-command,
+.drama-scope-navigator,
+.drama-script-workspace,
+.drama-document-editor,
+.drama-main-stage,
+.drama-stage-rail,
+.drama-agent-rail {
+  border-color: #dddddd !important;
+  background: #ffffff !important;
+  color: #111111 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .045) !important;
+}
+
+.drama-project-identity > span {
+  background: #efefef !important;
+  color: #222222 !important;
+}
+
+.drama-phase-nav button {
+  border-color: transparent;
+  background: #f5f5f5;
+  color: #666666;
+}
+
+.drama-phase-nav button:hover {
+  border-color: #cfcfcf;
+  background: #eeeeee;
+  color: #111111;
+}
+
+.drama-phase-nav button.active {
+  border-color: #c8c8c8;
+  background: #e8e8e8;
+  color: #111111;
+  box-shadow: inset 0 -2px 0 #222222;
+}
+
+.drama-phase-nav button > svg,
+.drama-phase-nav button.active > svg {
+  color: #3a3a3a;
+}
+
+.drama-canvas-board.theme-light {
+  border-color: #dedede !important;
+  background: #f5f5f5 !important;
+  color: #111111 !important;
+  box-shadow: 0 16px 44px rgba(0, 0, 0, .07) !important;
+}
+
+.theme-light .drama-canvas-toolbar {
+  border-color: #dedede;
+  background: #ffffff;
+}
+
+.theme-light .drama-canvas-toolbar .eyebrow {
+  background: #ededed;
+  color: #444444;
+}
+
+.theme-light .drama-canvas-toolbar h2 {
+  color: #111111;
+}
+
+.theme-light .drama-canvas-toolbar p {
+  color: #6b6b6b;
+}
+
+.theme-light .drama-canvas-viewport {
+  background: #f4f4f4;
+}
+
+.theme-light .drama-canvas-paper-grid {
+  background-image:
+    linear-gradient(rgba(0, 0, 0, .055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, .055) 1px, transparent 1px);
+}
+
+.theme-light .drama-canvas-lane,
+.theme-light .drama-canvas-node {
+  border-color: #dedede;
+  background: #ffffff;
+}
+
+.theme-light .drama-canvas-node.ready {
+  border-color: #b9b9b9;
+  background: #fafafa;
+}
+
+.theme-light .drama-canvas-actions button,
+.theme-light .drama-canvas-zoom button {
+  border-color: #d7d7d7;
+  background: #ffffff;
+  color: #444444;
+}
+
+.theme-light .drama-scope-switch {
+  border-color: #d7d7d7;
+  background: #eeeeee;
+}
+
+.theme-light .drama-canvas-actions .drama-scope-switch button.active {
+  background: #ffffff;
+  color: #111111;
+}
+
+.drama-agent-panel,
+.drama-agent-panel-head,
+.drama-agent-context,
+.drama-agent-compose {
+  border-color: #dddddd !important;
+  background: #ffffff !important;
+  color: #111111 !important;
+}
+
+.drama-agent-context {
+  background: #f5f5f5 !important;
+}
+
+.drama-agent-conversation,
+.drama-agent-empty {
+  background: #fafafa !important;
+  color: #686868 !important;
+}
+
+.drama-agent-panel-head > div:first-child > span,
+.drama-agent-empty-mark > span {
+  border-color: #dedede;
+  background: #ededed !important;
+  color: #222222 !important;
+}
+
+.drama-agent-context span,
+.drama-agent-compose .tool-pill {
+  border-color: #dddddd !important;
+  background: #ffffff !important;
+  color: #555555 !important;
+}
+
+.drama-agent-suggestions > button {
+  border-color: #dedede;
+  background: #ffffff;
+}
+
+.drama-agent-suggestions > button:hover {
+  border-color: #bdbdbd;
+  background: #f8f8f8;
+}
+
+.drama-agent-suggestions > button > span {
+  background: #ededed;
+  color: #222222;
+}
+
+.drama-agent-compose .composer.compact {
+  border-color: #d9d9d9 !important;
+  background: #f6f6f6 !important;
+}
+
+.drama-agent-compose .send-button {
+  background: #111111;
+}
+
+.drama-quickstart {
+  border-color: #252525 !important;
+  background:
+    radial-gradient(circle at 90% 0%, rgba(255, 255, 255, .11), transparent 34%),
+    linear-gradient(145deg, #121212, #242424 62%, #171717) !important;
+  box-shadow: 0 24px 68px rgba(0, 0, 0, .18) !important;
+}
+
+.drama-quickstart-copy .eyebrow {
+  border-color: #4c4c4c;
+  background: #222222;
+  color: #e9e9e9;
+}
+
+.drama-quickstart-copy h2 em {
+  background: linear-gradient(92deg, #ffffff, #bdbdbd);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+.drama-quickstart-flow article {
+  border-color: #393939;
+  background: #1b1b1b;
+}
+
+.drama-quickstart-flow article > span {
+  background: #ffffff;
+  color: #111111;
+}
+
+.drama-quickstart-examples button {
+  border-color: #3c3c3c;
+  background: #1d1d1d;
+  color: #d7d7d7;
+}
+
+.drama-quickstart-examples button:hover {
+  border-color: #6d6d6d;
+  background: #292929;
+}
+
+.drama-launch-card {
+  border-color: #dedede !important;
+  background: #ffffff !important;
+  color: #111111 !important;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .2) !important;
+}
+
+.drama-launch-card-head {
+  border-color: #e3e3e3;
+}
+
+.drama-launch-card-head span,
+.drama-launch-meta svg {
+  color: #333333;
+}
+
+.drama-launch-card textarea,
+.drama-launch-card select {
+  border-color: #d9d9d9;
+  background: #f8f8f8;
+  color: #111111;
+}
+
+.drama-launch-card textarea:focus {
+  border-color: #888888;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, .06);
+}
+
+.drama-launch-button {
+  background: #111111 !important;
+  color: #ffffff !important;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, .15) !important;
+}
+
+.drama-launch-button:disabled {
+  background: #dddddd !important;
+  color: #888888 !important;
+}
+
+.drama-start-roadmap {
+  border-color: #dddddd !important;
+  background: #ffffff !important;
+}
+
+.drama-start-roadmap-grid article {
+  border-color: #e1e1e1 !important;
+  background: #fafafa !important;
+}
+
+.drama-start-roadmap-grid article > span {
+  background: #ececec !important;
+  color: #222222 !important;
+}
+
+html[data-theme="dark"] {
+  --ink: #f2f2f2;
+  --muted: #a0a0a0;
+  --line: #303030;
+  --page: #090909;
+  --blue: #f0f0f0;
+  --blue-soft: #252525;
+  --surface: #151515;
+  --surface-subtle: #101010;
+  accent-color: #ffffff;
+}
+
+html[data-theme="dark"] body,
+html[data-theme="dark"] .studio-main {
+  background: #090909 !important;
+  color: #f2f2f2 !important;
+}
+
+html[data-theme="dark"] .studio-sidebar {
+  border-right-color: #292929;
+  background: #050505;
+  box-shadow: 10px 0 30px rgba(0, 0, 0, .24);
+}
+
+html[data-theme="dark"] .studio-brand {
+  color: #f4f4f4;
+}
+
+html[data-theme="dark"] .studio-brand-mark {
+  background: #f4f4f4;
+  color: #080808;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .34);
+}
+
+html[data-theme="dark"] .studio-brand-copy strong {
+  color: #f4f4f4;
+}
+
+html[data-theme="dark"] .studio-brand-copy small {
+  color: #999999;
+}
+
+html[data-theme="dark"] .studio-version {
+  border-color: #353535;
+  background: #171717;
+  color: #b8b8b8;
+}
+
+html[data-theme="dark"] .studio-create {
+  border-color: #353535;
+  background: #171717;
+}
+
+html[data-theme="dark"] .studio-create:hover {
+  border-color: #626262;
+  background: #202020;
+}
+
+html[data-theme="dark"] .studio-create-icon {
+  background: #f2f2f2;
+  color: #0a0a0a;
+}
+
+html[data-theme="dark"] .studio-create strong {
+  color: #f2f2f2;
+}
+
+html[data-theme="dark"] .studio-create small,
+html[data-theme="dark"] .studio-nav-label {
+  color: #858585;
+}
+
+html[data-theme="dark"] .studio-nav-item {
+  color: #adadad;
+}
+
+html[data-theme="dark"] .studio-nav-item svg {
+  color: #7f7f7f;
+}
+
+html[data-theme="dark"] .studio-nav-item:hover {
+  background: #181818;
+  color: #ffffff;
+}
+
+html[data-theme="dark"] .studio-nav-item.active {
+  background: #f2f2f2;
+  color: #080808;
+  box-shadow: none;
+}
+
+html[data-theme="dark"] .studio-nav-item.active svg {
+  color: #080808;
+}
+
+html[data-theme="dark"] .studio-theme-switch {
+  border-top-color: #292929;
+}
+
+html[data-theme="dark"] .studio-theme-switch > span {
+  color: #8c8c8c;
+}
+
+html[data-theme="dark"] .studio-theme-switch > div {
+  border-color: #343434;
+  background: #151515;
+}
+
+html[data-theme="dark"] .studio-theme-switch button {
+  color: #888888;
+}
+
+html[data-theme="dark"] .studio-theme-switch button:hover {
+  color: #ffffff;
+}
+
+html[data-theme="dark"] .studio-theme-switch button.active {
+  background: #f2f2f2;
+  color: #080808;
+  box-shadow: none;
+}
+
+html[data-theme="dark"] .studio-sidebar-footer {
+  border-top-color: #292929;
+}
+
+html[data-theme="dark"] .studio-sidebar-footer strong {
+  color: #eeeeee;
+}
+
+html[data-theme="dark"] .studio-sidebar-footer small {
+  color: #858585;
+}
+
+html[data-theme="dark"] .connection-dot {
+  background: #666666;
+  box-shadow: 0 0 0 4px #151515;
+}
+
+html[data-theme="dark"] .connection-dot.online {
+  background: #f2f2f2;
+  box-shadow: 0 0 0 4px #191919;
+}
+
+html[data-theme="dark"]
+  :is(
+    .drama-project-command,
+    .drama-scope-navigator,
+    .drama-agent-panel,
+    .drama-agent-panel-head,
+    .drama-agent-empty,
+    .drama-launch-card,
+    .drama-start-roadmap,
+    .workbench-panel,
+    .model-card,
+    .asset-library-card,
+    .task-center-row,
+    .agent-entry-card,
+    .capability-map,
+    .stat-strip article,
+    .asset-library-toolbar,
+    .task-center-filters,
+    .gallery-item,
+    .quick-actions > button,
+    .composer
+  ) {
+  border-color: #303030 !important;
+  background: #151515 !important;
+  color: #f2f2f2 !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] .drama-agent-conversation,
+html[data-theme="dark"] .drama-agent-empty {
+  background: #101010 !important;
+}
+
+html[data-theme="dark"]
+  :is(
+    .drama-agent-context,
+    .drama-agent-compose,
+    .drama-agent-compose .composer.compact,
+    .drama-agent-compose .composer.compact textarea,
+    .drama-launch-card textarea,
+    .drama-launch-card select,
+    .workbench-field textarea,
+    .workbench-field select,
+    .asset-library-search,
+    .task-center-search,
+    .composer textarea
+  ) {
+  border-color: #343434 !important;
+  background: #0d0d0d !important;
+  color: #eeeeee !important;
+}
+
+html[data-theme="dark"]
+  :is(
+    .drama-phase-nav button,
+    .drama-command-actions button,
+    .drama-scope-nav-section > button,
+    .drama-scope-episode-list > button,
+    .drama-scope-stage-list > button,
+    .drama-agent-panel-head > div:last-child button,
+    .drama-agent-context span,
+    .drama-agent-suggestions > button,
+    .drama-agent-compose .tool-pill,
+    .tool-pill,
+    .compact-action
+  ) {
+  border-color: #383838 !important;
+  background: #1b1b1b !important;
+  color: #d2d2d2 !important;
+}
+
+html[data-theme="dark"] .drama-phase-nav button.active,
+html[data-theme="dark"] .drama-scope-nav-section > button.active,
+html[data-theme="dark"] .drama-scope-episode-list > button.active,
+html[data-theme="dark"] .drama-scope-stage-list > button.active {
+  border-color: #777777 !important;
+  background: #2b2b2b !important;
+  color: #ffffff !important;
+  box-shadow: inset 0 -2px 0 #ffffff !important;
+}
+
+html[data-theme="dark"] .drama-agent-panel-head > div:first-child > span,
+html[data-theme="dark"] .drama-agent-empty-mark > span,
+html[data-theme="dark"] .drama-agent-suggestions > button > span {
+  background: #272727 !important;
+  color: #f5f5f5 !important;
+}
+
+html[data-theme="dark"] .drama-agent-panel .message-content {
+  border-color: #303030 !important;
+  background: #181818 !important;
+  color: #efefef !important;
+}
+
+html[data-theme="dark"] .drama-agent-panel .message.user .message-content {
+  border-color: #4d4d4d !important;
+  background: #262626 !important;
+}
+
+html[data-theme="dark"] .drama-launch-button {
+  background: #f2f2f2 !important;
+  color: #0a0a0a !important;
+}
+
+html[data-theme="dark"] .drama-launch-button:disabled {
+  background: #292929 !important;
+  color: #6f6f6f !important;
+}
+
+html[data-theme="dark"] .drama-canvas-board {
+  border-color: #2d2d2d !important;
+  background: #0a0a0a !important;
+}
+
+html[data-theme="dark"] .drama-canvas-toolbar {
+  border-color: #2d2d2d !important;
+  background: #121212 !important;
+}
+
+html[data-theme="dark"]
+  :is(
+    .drama-canvas-lane,
+    .drama-canvas-node,
+    .drama-canvas-inspector,
+    .drama-canvas-zoom
+  ) {
+  border-color: #333333 !important;
+  background: #181818 !important;
+  color: #eeeeee !important;
+}
+
+html[data-theme="dark"] .drama-canvas-node.ready {
+  border-color: #8a8a8a !important;
+  background: #202020 !important;
+}
+
+html[data-theme="dark"] .drama-canvas-paper-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, .075) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, .075) 1px, transparent 1px);
+}
+
+html[data-theme="dark"] .creation-zone h1 em,
+html[data-theme="dark"] .drama-quickstart-copy h2 em {
+  background: linear-gradient(92deg, #ffffff, #a8a8a8);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+html[data-theme="dark"] .drama-quickstart {
+  border-color: #292929 !important;
+  background:
+    radial-gradient(circle at 90% 0%, rgba(255, 255, 255, .09), transparent 34%),
+    linear-gradient(145deg, #0a0a0a, #202020 62%, #111111) !important;
+}
+
+html[data-theme="dark"] .drama-quickstart-flow article,
+html[data-theme="dark"] .drama-quickstart-examples button {
+  border-color: #363636;
+  background: #181818;
+}
+
+html[data-theme="dark"] .drama-quickstart-flow article > span {
+  background: #f0f0f0;
+  color: #0b0b0b;
+}
+
+html[data-theme="dark"] .drama-start-roadmap-grid article {
+  border-color: #303030 !important;
+  background: #111111 !important;
+}
+
+html[data-theme="dark"] .drama-start-roadmap-grid article > span {
+  background: #252525 !important;
+  color: #f2f2f2 !important;
+}
+
+html[data-theme="light"] .studio-sidebar {
+  border-right-color: #dddddd !important;
+  background: #ffffff !important;
+  box-shadow: 8px 0 28px rgba(0, 0, 0, .045) !important;
+}
+
+html[data-theme="light"] .studio-brand,
+html[data-theme="light"] .studio-brand-copy strong,
+html[data-theme="light"] .studio-create strong,
+html[data-theme="light"] .studio-sidebar-footer strong {
+  color: #111111 !important;
+}
+
+html[data-theme="light"] .studio-brand-copy small,
+html[data-theme="light"] .studio-create small,
+html[data-theme="light"] .studio-nav-label,
+html[data-theme="light"] .studio-sidebar-footer small {
+  color: #737373 !important;
+}
+
+html[data-theme="light"] .studio-brand-mark {
+  background: #111111 !important;
+  color: #ffffff !important;
+}
+
+html[data-theme="light"] .studio-version {
+  border-color: #dddddd !important;
+  background: #f1f1f1 !important;
+  color: #555555 !important;
+}
+
+html[data-theme="light"] .studio-create {
+  border-color: #dedede !important;
+  background: #f4f4f4 !important;
+}
+
+html[data-theme="light"] .studio-create:hover {
+  border-color: #b8b8b8 !important;
+  background: #eeeeee !important;
+}
+
+html[data-theme="light"] .studio-create-icon {
+  background: #111111 !important;
+  color: #ffffff !important;
+}
+
+html[data-theme="light"] .studio-nav-item {
+  color: #555555 !important;
+}
+
+html[data-theme="light"] .studio-nav-item svg {
+  color: #777777 !important;
+}
+
+html[data-theme="light"] .studio-nav-item:hover {
+  background: #f2f2f2 !important;
+  color: #111111 !important;
+}
+
+html[data-theme="light"] .studio-nav-item.active {
+  background: #111111 !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="light"] .studio-nav-item.active svg {
+  color: #ffffff !important;
+}
+
+html[data-theme="light"] .studio-theme-switch {
+  border-top-color: #e1e1e1 !important;
+}
+
+html[data-theme="light"] .studio-theme-switch > span {
+  color: #707070 !important;
+}
+
+html[data-theme="light"] .studio-theme-switch > div {
+  border-color: #dddddd !important;
+  background: #f3f3f3 !important;
+}
+
+html[data-theme="light"] .studio-theme-switch button {
+  color: #777777 !important;
+}
+
+html[data-theme="light"] .studio-theme-switch button:hover {
+  color: #111111 !important;
+}
+
+html[data-theme="light"] .studio-theme-switch button.active {
+  background: #111111 !important;
+  color: #ffffff !important;
+}
+
+html[data-theme="light"] .studio-sidebar-footer {
+  border-top-color: #e2e2e2 !important;
+}
+
+html[data-theme="light"] .connection-dot {
+  background: #9a9a9a !important;
+  box-shadow: 0 0 0 4px #eeeeee !important;
+}
+
+html[data-theme="light"] .connection-dot.online {
+  background: #222222 !important;
+  box-shadow: 0 0 0 4px #ececec !important;
+}
+
+/* High-specificity dark surfaces prevent legacy light cards from showing through. */
+html[data-theme="dark"] main.drama-studio-page {
+  background: #090909 !important;
+}
+
+html[data-theme="dark"] main.drama-studio-page .drama-agent-column {
+  background: #090909 !important;
+}
+
+html[data-theme="dark"]
+  main.drama-studio-page
+  .drama-agent-column
+  .drama-agent-panel,
+html[data-theme="dark"]
+  main.drama-studio-page
+  .drama-agent-column
+  .drama-agent-panel-head,
+html[data-theme="dark"]
+  main.drama-studio-page
+  .drama-agent-column
+  .drama-agent-context,
+html[data-theme="dark"]
+  main.drama-studio-page
+  .drama-agent-column
+  .drama-agent-compose {
+  border-color: #303030 !important;
+  background: #111111 !important;
+  color: #f2f2f2 !important;
+}
+
+html[data-theme="dark"]
+  main.drama-studio-page
+  .drama-agent-column
+  .drama-agent-conversation,
+html[data-theme="dark"]
+  main.drama-studio-page
+  .drama-agent-column
+  .drama-agent-empty,
+html[data-theme="dark"]
+  main.drama-studio-page
+  .drama-agent-column
+  .composer.compact,
+html[data-theme="dark"]
+  main.drama-studio-page
+  .drama-agent-column
+  .composer-footer,
+html[data-theme="dark"]
+  main.drama-studio-page
+  .drama-agent-column
+  .composer.compact textarea {
+  border-color: #303030 !important;
+  background: #0b0b0b !important;
+  color: #f0f0f0 !important;
+}
+
+html[data-theme="dark"]
+  main.drama-studio-page
+  .drama-agent-column
+  .drama-agent-suggestions
+  > button,
+html[data-theme="dark"]
+  main.drama-studio-page
+  .drama-agent-column
+  .drama-agent-context
+  span,
+html[data-theme="dark"]
+  main.drama-studio-page
+  .drama-agent-column
+  .tool-pill {
+  border-color: #383838 !important;
+  background: #1a1a1a !important;
+  color: #d8d8d8 !important;
+}
+
+html[data-theme="dark"]
+  main.drama-studio-page
+  .drama-agent-panel-head
+  em,
+html[data-theme="dark"]
+  main.drama-studio-page
+  .drama-agent-context-ready,
+html[data-theme="dark"]
+  main.drama-studio-page
+  .drama-agent-panel-head
+  em.ready,
+html[data-theme="dark"]
+  main.drama-studio-page
+  .drama-agent-panel-head
+  em.busy {
+  border-color: #414141 !important;
+  background: #202020 !important;
+  color: #e5e5e5 !important;
+}
+
+html[data-theme="dark"]
+  main.drama-studio-page
+  .drama-agent-panel-head
+  > div:first-child
+  > span,
+html[data-theme="dark"]
+  main.drama-studio-page
+  .drama-agent-empty-mark
+  > span,
+html[data-theme="dark"]
+  main.drama-studio-page
+  .drama-agent-suggestions
+  > button
+  > span {
+  border-color: #3b3b3b !important;
+  background: #252525 !important;
+  color: #f4f4f4 !important;
+}
+
+html[data-theme="dark"]
+  main.drama-studio-page
+  .drama-project-identity
+  > span,
+html[data-theme="dark"]
+  main.drama-studio-page
+  .drama-view-switch,
+html[data-theme="dark"]
+  main.drama-studio-page
+  .drama-command-actions
+  > span {
+  border-color: #353535 !important;
+  background: #171717 !important;
+  color: #d7d7d7 !important;
+}
+
+html[data-theme="dark"]
+  main.drama-studio-page
+  .drama-canvas-board
+  .drama-canvas-lane
+  > header
+  > span {
+  border-color: #3b3b3b !important;
+  background: #252525 !important;
+  color: #f2f2f2 !important;
+}
+
+html[data-theme="dark"]
+  main.drama-studio-page
+  .drama-canvas-board
+  .drama-canvas-node
+  svg {
+  color: #bdbdbd !important;
+}
+
+/* Charcoal dark palette: lift black into dark gray and unify every menu. */
+html[data-theme="dark"] {
+  --ink: #eeeeec;
+  --muted: #a9aaa6;
+  --line: #3a3b38;
+  --page: #1a1b19;
+  --blue: #dcddda;
+  --blue-soft: #2c2d2a;
+  --surface: #242522;
+  --surface-subtle: #20211e;
+}
+
+html[data-theme="dark"] body,
+html[data-theme="dark"] .studio-main {
+  background: #1a1b19 !important;
+  color: #eeeeec !important;
+}
+
+html[data-theme="dark"] .studio-sidebar {
+  border-right-color: #393a37 !important;
+  background: #20211e !important;
+  box-shadow: 8px 0 28px rgba(0, 0, 0, .16) !important;
+}
+
+html[data-theme="dark"] .studio-create {
+  border-color: #41423e !important;
+  background: #292a26 !important;
+}
+
+html[data-theme="dark"] .studio-create:hover {
+  border-color: #666762 !important;
+  background: #31322e !important;
+}
+
+html[data-theme="dark"] .studio-nav-item:hover {
+  background: #2c2d29 !important;
+  color: #ffffff !important;
+}
+
+html[data-theme="dark"] .studio-nav-item.active {
+  background: #363733 !important;
+  color: #ffffff !important;
+  box-shadow:
+    inset 3px 0 #f0f0ed,
+    inset 0 0 0 1px #474844 !important;
+}
+
+html[data-theme="dark"] .studio-nav-item.active svg {
+  color: #ffffff !important;
+}
+
+html[data-theme="dark"] .studio-theme-switch {
+  border-top-color: #393a36 !important;
+}
+
+html[data-theme="dark"] .studio-theme-switch > div {
+  border-color: #41423e !important;
+  background: #272824 !important;
+}
+
+html[data-theme="dark"] .studio-theme-switch button.active {
+  background: #484945 !important;
+  color: #ffffff !important;
+  box-shadow: inset 0 0 0 1px #676863 !important;
+}
+
+html[data-theme="dark"] .studio-sidebar-footer {
+  border-top-color: #393a36 !important;
+}
+
+html[data-theme="dark"] main.drama-studio-page,
+html[data-theme="dark"] main.drama-studio-page .drama-agent-column {
+  background: #1a1b19 !important;
+}
+
+html[data-theme="dark"]
+  :is(
+    .drama-project-command,
+    .drama-scope-navigator,
+    .drama-agent-panel,
+    .drama-agent-panel-head,
+    .drama-agent-context,
+    .drama-agent-compose,
+    .drama-agent-conversation,
+    .drama-agent-empty,
+    .drama-launch-card,
+    .drama-start-roadmap,
+    .workbench-panel,
+    .model-card,
+    .asset-library-card,
+    .task-center-row,
+    .agent-entry-card,
+    .capability-map,
+    .stat-strip article,
+    .composer,
+    .history-drawer,
+    .settings-drawer
+  ) {
+  border-color: #3a3b38 !important;
+  background: #242522 !important;
+  color: #eeeeec !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"]
+  :is(
+    .drama-phase-nav,
+    .drama-view-switch,
+    .drama-scope-switch,
+    .drama-stage-subnav,
+    .drama-script-tabs,
+    .drama-asset-tabs,
+    .drama-shot-view-switch,
+    .models-section-nav,
+    .discover-tabs,
+    .capability-switch,
+    .task-filter-bar,
+    .asset-library-filters,
+    .studio-mobile-more-menu
+  ) {
+  border-color: #3d3e3a !important;
+  background: #20211e !important;
+}
+
+html[data-theme="dark"]
+  :is(
+    .drama-phase-nav button,
+    .drama-view-switch button,
+    .drama-scope-switch button,
+    .drama-stage-subnav button,
+    .drama-script-tabs button,
+    .drama-asset-tabs button,
+    .drama-shot-view-switch button,
+    .models-section-nav a,
+    .discover-tabs button,
+    .capability-switch button,
+    .task-filter-bar button,
+    .asset-library-filters button
+  ) {
+  border-color: transparent !important;
+  background: transparent !important;
+  color: #aaa9a4 !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"]
+  :is(
+    .drama-phase-nav button:hover,
+    .drama-view-switch button:hover,
+    .drama-scope-switch button:hover,
+    .drama-stage-subnav button:hover,
+    .drama-script-tabs button:hover,
+    .drama-asset-tabs button:hover,
+    .drama-shot-view-switch button:hover,
+    .models-section-nav a:hover,
+    .discover-tabs button:hover,
+    .capability-switch button:hover,
+    .task-filter-bar button:hover,
+    .asset-library-filters button:hover
+  ) {
+  background: #2d2e2a !important;
+  color: #f5f5f2 !important;
+}
+
+html[data-theme="dark"]
+  :is(
+    .drama-phase-nav button.active,
+    .drama-view-switch button.active,
+    .drama-scope-switch button.active,
+    .drama-stage-subnav button.active,
+    .drama-script-tabs button.active,
+    .drama-asset-tabs button.active,
+    .drama-shot-view-switch button.active,
+    .models-section-nav a.active,
+    .discover-tabs button.active,
+    .capability-switch button.active,
+    .task-filter-bar button.active,
+    .asset-library-filters button.active
+  ) {
+  border-color: #5b5c57 !important;
+  background: #363733 !important;
+  color: #ffffff !important;
+  box-shadow: inset 0 -2px 0 #f1f1ee !important;
+}
+
+html[data-theme="dark"]
+  :is(
+    .drama-phase-nav button,
+    .drama-view-switch,
+    .drama-scope-switch,
+    .drama-stage-subnav,
+    .drama-script-tabs,
+    .drama-asset-tabs,
+    .drama-shot-view-switch,
+    .models-section-nav,
+    .discover-tabs,
+    .capability-switch,
+    .task-filter-bar,
+    .asset-library-filters
+  )
+  :is(svg, strong, span) {
+  color: inherit;
+}
+
+html[data-theme="dark"]
+  :is(
+    .drama-agent-context,
+    .drama-agent-compose,
+    .drama-agent-compose .composer.compact,
+    .drama-agent-compose .composer.compact textarea,
+    .composer textarea,
+    .workbench-field textarea,
+    .workbench-field select,
+    .asset-library-search,
+    .task-center-search,
+    .drama-launch-card textarea,
+    .drama-launch-card select
+  ) {
+  border-color: #3d3e3a !important;
+  background: #20211e !important;
+  color: #eeeeec !important;
+}
+
+html[data-theme="dark"]
+  :is(
+    .drama-agent-context span,
+    .drama-agent-suggestions > button,
+    .drama-agent-compose .tool-pill,
+    .tool-pill,
+    .compact-action,
+    .status-chip
+  ) {
+  border-color: #41423e !important;
+  background: #2b2c28 !important;
+  color: #d8d8d4 !important;
+}
+
+html[data-theme="dark"] .drama-agent-panel .message-content {
+  border-color: #3b3c38 !important;
+  background: #282925 !important;
+  color: #eeeeec !important;
+}
+
+html[data-theme="dark"] .drama-agent-panel .message.user .message-content {
+  border-color: #50514c !important;
+  background: #343531 !important;
+}
+
+html[data-theme="dark"] .drama-canvas-board {
+  border-color: #3a3b37 !important;
+  background: #1d1e1c !important;
+}
+
+html[data-theme="dark"] .drama-canvas-toolbar {
+  border-color: #3a3b37 !important;
+  background: #252623 !important;
+}
+
+html[data-theme="dark"]
+  :is(
+    .drama-canvas-lane,
+    .drama-canvas-node,
+    .drama-canvas-inspector,
+    .drama-canvas-zoom
+  ) {
+  border-color: #444540 !important;
+  background: #2a2b27 !important;
+  color: #eeeeec !important;
+}
+
+html[data-theme="dark"] .drama-canvas-node.ready {
+  border-color: #969792 !important;
+  background: #333430 !important;
+}
+
+html[data-theme="dark"] .drama-canvas-paper-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, .055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, .055) 1px, transparent 1px);
+}
+
+html[data-theme="dark"] .drama-quickstart {
+  border-color: #333430 !important;
+  background:
+    radial-gradient(circle at 88% 0%, rgba(255, 255, 255, .075), transparent 34%),
+    linear-gradient(145deg, #20211e, #292a26 58%, #1e1f1c) !important;
+}
+
+html[data-theme="dark"] .drama-quickstart-flow article,
+html[data-theme="dark"] .drama-quickstart-examples button {
+  border-color: #41423e !important;
+  background: #292a26 !important;
+}
+
+html[data-theme="dark"] .drama-start-roadmap-grid article {
+  border-color: #3b3c38 !important;
+  background: #20211e !important;
+}
+
+html[data-theme="dark"]
+  :is(.chat-workspace, .workspace-page, .agent-workbench, .home-scroll) {
+  background: #1a1b19 !important;
+  color: #eeeeec !important;
+}
+
+html[data-theme="dark"]
+  :is(
+    .history-drawer.rail,
+    .chat-panel,
+    .chat-header,
+    .conversation-area,
+    .composer-dock,
+    .agent-context-rail
+  ) {
+  border-color: #3a3b38 !important;
+  background: #242522 !important;
+  color: #eeeeec !important;
+}
+
+html[data-theme="dark"] .history-drawer.rail {
+  background: #20211e !important;
+}
+
+html[data-theme="dark"] .chat-header {
+  border-bottom-color: #3a3b38 !important;
+}
+
+html[data-theme="dark"] .composer-dock {
+  background: linear-gradient(to bottom, rgba(36, 37, 34, 0), #242522 12px) !important;
+}
+
+html[data-theme="dark"]
+  :is(
+    .history-drawer .new-chat,
+    .history-drawer .conversation:hover,
+    .history-drawer .conversation.active,
+    .chat-header .header-new,
+    .chat-runtime,
+    .context-tools span
+  ) {
+  border-color: #41423e !important;
+  background: #2b2c28 !important;
+  color: #ddddda !important;
+}
+
+html[data-theme="dark"]
+  :is(
+    .context-state,
+    .context-info-row,
+    .context-meta > div,
+    .reasoning-panel,
+    .message-tool-call
+  ) {
+  border-color: #3b3c38 !important;
+  background: #282925 !important;
+  color: #eeeeec !important;
+}
+
+html[data-theme="dark"] .message.user .message-content {
+  border-color: #4c4d48 !important;
+  background: #343531 !important;
+  color: #f2f2ef !important;
+}
+
+html[data-theme="dark"] .message.assistant .message-content {
+  background: transparent !important;
+  color: #eeeeec !important;
+}
+
+html[data-theme="dark"] .reasoning-panel > button,
+html[data-theme="dark"] .message-tool-call > summary {
+  color: #c4c4c0 !important;
+}
+
+html[data-theme="dark"] .reasoning-body,
+html[data-theme="dark"] .message-tool-call pre {
+  border-color: #3b3c38 !important;
+  background: #1e1f1c !important;
+  color: #d8d8d4 !important;
+}
+
+html[data-theme="dark"]
+  :is(
+    .models-section-nav,
+    .model-filter-bar,
+    .workflow-toolbar,
+    .workflow-tabs,
+    .task-center-filters,
+    .asset-library-toolbar
+  ) {
+  border-color: #3b3c38 !important;
+  background: #20211e !important;
+}
+
+html[data-theme="dark"]
+  :is(
+    .models-section-nav a,
+    .model-filter-bar button,
+    .workflow-tabs button,
+    .capability-switch button,
+    .task-filter-bar button,
+    .asset-library-filters button,
+    .discover-tabs button
+  ) {
+  background: transparent !important;
+  color: #aaa9a4 !important;
+}
+
+html[data-theme="dark"]
+  :is(
+    .models-section-nav a.active,
+    .model-filter-bar button.active,
+    .workflow-tabs button.active,
+    .capability-switch button.active,
+    .task-filter-bar button.active,
+    .asset-library-filters button.active,
+    .discover-tabs button.active
+  ) {
+  border-color: #565752 !important;
+  background: #343531 !important;
+  color: #ffffff !important;
+}
+
+/* Unified readability scale. */
+:root {
+  --type-caption: 12px;
+  --type-label: 13px;
+  --type-body: 14.5px;
+  --type-card-title: 16px;
+  --type-page-title: 32px;
+}
+
+body {
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.studio-main button,
+.studio-main input,
+.studio-main select,
+.studio-main textarea,
+.studio-sidebar button {
+  font-size: var(--type-label) !important;
+  line-height: 1.45;
+}
+
+.studio-main small,
+.studio-sidebar small {
+  font-size: var(--type-caption) !important;
+  line-height: 1.45;
+}
+
+.studio-brand-copy strong {
+  font-size: 18px !important;
+}
+
+.studio-brand-copy small,
+.studio-version,
+.studio-nav-label,
+.studio-create small,
+.studio-sidebar-footer small,
+.studio-theme-switch > span {
+  font-size: var(--type-caption) !important;
+}
+
+.studio-create strong,
+.studio-sidebar-footer strong,
+.studio-nav-item {
+  font-size: 13px !important;
+}
+
+.page-heading h1,
+.drama-studio-heading h1 {
+  font-size: clamp(30px, 3vw, 40px) !important;
+  line-height: 1.14 !important;
+}
+
+.page-heading p,
+.drama-studio-heading p {
+  font-size: var(--type-body) !important;
+  line-height: 1.7 !important;
+}
+
+.eyebrow {
+  font-size: var(--type-caption) !important;
+}
+
+.panel-heading strong {
+  font-size: 13.5px !important;
+}
+
+.panel-caption,
+.mini-badge,
+.queue-count,
+.status-chip {
+  font-size: var(--type-caption) !important;
+}
+
+.agent-entry-card p,
+.capability-map > p,
+.workspace-card p,
+.gallery-label small,
+.settings-help,
+.workbench-field,
+.asset-library-search input,
+.task-center-search input {
+  font-size: var(--type-label) !important;
+  line-height: 1.65 !important;
+}
+
+.model-card h2 {
+  font-size: 18px !important;
+}
+
+.model-card > code,
+.model-card p,
+.model-test-result p,
+.task-center-row p,
+.task-result-preview small {
+  font-size: var(--type-label) !important;
+  line-height: 1.6 !important;
+}
+
+.drama-project-identity small,
+.drama-phase-nav button small,
+.drama-phase-nav button > span,
+.drama-command-actions > span,
+.drama-scope-navigator > header small,
+.drama-scope-nav-label span,
+.drama-scope-nav-label small,
+.drama-scope-nav-section > button small,
+.drama-scope-episode-list > button small,
+.drama-scope-stage-list > button small,
+.drama-canvas-metrics span,
+.drama-canvas-node-head small,
+.drama-canvas-node-body small,
+.drama-canvas-lane > header small,
+.drama-canvas-zoom > span,
+.drama-agent-context small,
+.drama-agent-composer-head > small,
+.drama-agent-panel .message-author,
+.drama-agent-panel .message-status {
+  font-size: var(--type-caption) !important;
+  line-height: 1.45 !important;
+}
+
+.drama-project-identity strong {
+  font-size: 16px !important;
+}
+
+.drama-phase-nav button strong,
+.drama-scope-nav-section > button strong,
+.drama-scope-episode-list > button strong,
+.drama-scope-stage-list > button strong,
+.drama-canvas-node-head strong,
+.drama-canvas-node strong,
+.drama-canvas-lane > header strong,
+.drama-agent-panel-head strong,
+.drama-agent-suggestions > button strong {
+  font-size: var(--type-label) !important;
+  line-height: 1.4 !important;
+}
+
+.drama-canvas-node-body > p,
+.drama-canvas-node p,
+.drama-agent-empty p,
+.drama-agent-suggestions > button small {
+  font-size: var(--type-caption) !important;
+  line-height: 1.55 !important;
+}
+
+.drama-agent-context span {
+  font-size: var(--type-caption) !important;
+}
+
+.drama-agent-panel .markdown,
+.drama-agent-compose .composer.compact textarea {
+  font-size: 13px !important;
+  line-height: 1.7 !important;
+}
+
+.drama-agent-empty strong {
+  font-size: var(--type-card-title) !important;
+}
+
+.drama-quickstart-copy > p {
+  font-size: var(--type-body) !important;
+  line-height: 1.75 !important;
+}
+
+.drama-quickstart-flow strong,
+.drama-launch-card-head strong,
+.drama-start-roadmap-grid strong {
+  font-size: var(--type-label) !important;
+}
+
+.drama-quickstart-flow small,
+.drama-quickstart-examples > span,
+.drama-launch-card-head small,
+.drama-launch-meta,
+.drama-start-roadmap-grid p {
+  font-size: var(--type-caption) !important;
+  line-height: 1.55 !important;
+}
+
+.drama-launch-card label,
+.drama-launch-card textarea,
+.drama-launch-card select,
+.drama-launch-button {
+  font-size: var(--type-label) !important;
+}
+
+.drama-start-roadmap-head h2 {
+  font-size: 22px !important;
+}
+
+.message p,
+.markdown {
+  line-height: 1.72;
+}
+
+/* Dense drama metadata inherits the same readable scale. */
+.drama-series-overview > header span,
+.drama-series-overview > header > div:last-child span,
+.drama-series-episode-main em,
+.drama-series-episode-footer > span,
+.drama-series-episode-footer > button,
+.drama-series-metrics span,
+.drama-canvas-shot em {
+  font-size: var(--type-caption) !important;
+  line-height: 1.5 !important;
+}
+
+.drama-series-overview > header strong {
+  font-size: 14px !important;
+}
+
+.drama-series-episode-main > div:first-child > span {
+  font-size: var(--type-caption) !important;
+}
+
+.drama-series-episode-main > div:first-child strong {
+  font-size: 12.5px !important;
+}
+
+.drama-series-metrics b {
+  font-size: var(--type-label) !important;
+}
+
+.drama-canvas-shot p {
+  font-size: var(--type-caption) !important;
+  line-height: 1.55 !important;
+}
+
+.drama-agent-title-line > span {
+  font-size: 9px !important;
+  letter-spacing: .05em !important;
+}
+
+.drama-agent-empty > p {
+  font-size: 12.5px !important;
+  line-height: 1.65 !important;
+}
+
+.drama-agent-context span,
+.drama-agent-context small,
+.drama-agent-composer-head > span,
+.drama-agent-composer-head > small,
+.drama-agent-panel .message-author,
+.drama-agent-panel .message-status {
+  font-size: 11px !important;
+}
+
+.drama-agent-suggestions > button strong {
+  font-size: var(--type-label) !important;
+}
+
+.drama-agent-suggestions > button small {
+  font-size: var(--type-caption) !important;
+}
+
+body .studio-main small {
+  font-size: 11px !important;
+  line-height: 1.5 !important;
+}
+
+.drama-canvas-chip-row span {
+  font-size: 11px !important;
+  line-height: 1.45 !important;
+}
+
+.drama-scope-navigator small,
+.drama-scope-nav-label span,
+.drama-scope-nav-label small,
+.drama-canvas-node small,
+.drama-canvas-lane small,
+.drama-canvas-node-body > p,
+.drama-canvas-node p {
+  color: #6f6d67 !important;
+}
+
+html[data-theme="dark"] .drama-scope-navigator small,
+html[data-theme="dark"] .drama-scope-nav-label span,
+html[data-theme="dark"] .drama-scope-nav-label small,
+html[data-theme="dark"] .drama-canvas-node small,
+html[data-theme="dark"] .drama-canvas-lane small,
+html[data-theme="dark"] .drama-canvas-node-body > p,
+html[data-theme="dark"] .drama-canvas-node p {
+  color: #b8b8b3 !important;
+}
