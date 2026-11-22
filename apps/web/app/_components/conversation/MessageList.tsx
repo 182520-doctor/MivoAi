@@ -9,6 +9,7 @@ import type { RefObject } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { ChatMessage } from "../../_features/chat/types";
+import { backendResourceUrl } from "../../../shared/ui/backend-resource";
 import { ReasoningPanel } from "./ReasoningPanel";
 
 type MessageListProps = {
@@ -91,14 +92,14 @@ export function MessageList({
                     typeof src === "string" ? (
                       <a
                         className="message-image-link"
-                        href={src}
+                        href={backendResourceUrl(src)}
                         target="_blank"
                         rel="noreferrer"
                         title="打开原图"
                       >
                         <img
                           className="message-image"
-                          src={src}
+                          src={backendResourceUrl(src)}
                           alt={alt ?? "Agent 生成图片"}
                           loading="lazy"
                         />

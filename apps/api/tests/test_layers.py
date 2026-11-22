@@ -1,5 +1,5 @@
-from app.contexts.conversations.infrastructure.repository import ConversationRepository
-from app.infrastructure.persistence.database import Database
+from app.adapters.persistence.database import Database
+from app.adapters.persistence.sqlite.conversations import ConversationRepository
 from app.shared.config import _resolve_codex_binary
 from app.shared.security import is_origin_allowed
 

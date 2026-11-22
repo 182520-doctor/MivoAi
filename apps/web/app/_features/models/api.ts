@@ -1,4 +1,9 @@
-import { getJson, putJson, requireJson } from "../../_shared/api/client";
+import {
+  apiFetch,
+  getJson,
+  putJson,
+  requireJson,
+} from "../../_shared/api/client";
 import type { Model, ModelTestResult, Preferences } from "./types";
 
 export async function loadModelCatalog() {
@@ -30,7 +35,7 @@ export async function testTextModel(
   prompt: string,
 ) {
   return requireJson<ModelTestResult>(
-    await fetch(`/api/models/${encodeURIComponent(modelId)}/test`, {
+    await apiFetch(`/api/models/${encodeURIComponent(modelId)}/test`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ providerId, prompt }),

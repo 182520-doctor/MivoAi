@@ -25,6 +25,7 @@ import { useModelSettings } from "../../_features/models/useModelSettings";
 import { DramaCandidateHistory } from "./DramaCandidateHistory";
 import { DramaEpisodeAssetShelf } from "./DramaEpisodeAssetShelf";
 import { DramaShotDirectionReview } from "./DramaShotDirectionReview";
+import { backendResourceUrl } from "../../../shared/ui/backend-resource";
 
 type DramaKeyframeBoardProps = {
   projectId: string;
@@ -214,7 +215,7 @@ export function DramaKeyframeBoard({
                   >
                     <span className="drama-keyframe-shot-thumb">
                       {frame ? (
-                        <img src={frame.url} alt="" />
+                        <img src={backendResourceUrl(frame.url)} alt="" />
                       ) : (
                         <ImageIcon size={20} />
                       )}
@@ -278,7 +279,7 @@ export function DramaKeyframeBoard({
                           return (
                             <div key={assetId}>
                               {asset ? (
-                                <img src={asset.url} alt="" />
+                                <img src={backendResourceUrl(asset.url)} alt="" />
                               ) : (
                                 <ImageIcon size={18} />
                               )}

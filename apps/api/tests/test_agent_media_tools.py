@@ -1,10 +1,10 @@
 import asyncio
 from pathlib import Path
 
-from app.contexts.conversations.infrastructure.codex_app_server import (
+from app.adapters.codex.app_server import (
     CodexAppServerClient,
 )
-from app.interfaces.agent_media_tools import (
+from app.delivery.agent.media_tools import (
     AgentMediaToolService,
     media_dynamic_tool_specs,
 )

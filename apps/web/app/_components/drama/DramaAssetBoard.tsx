@@ -43,6 +43,7 @@ import {
 import { loadSpeechVoices } from "../../_features/media/processingApi";
 import type { Model } from "../../_features/models/types";
 import { useModelSettings } from "../../_features/models/useModelSettings";
+import { backendResourceUrl } from "../../../shared/ui/backend-resource";
 
 type DramaAssetBoardProps = {
   projectId: string;
@@ -720,7 +721,7 @@ export function DramaAssetBoard({
                 >
                   <span className="drama-entity-thumb">
                     {asset ? (
-                      <img src={asset.url} alt="" />
+                      <img src={backendResourceUrl(asset.url)} alt="" />
                     ) : (
                       <ImagePlus size={21} />
                     )}
@@ -1041,7 +1042,10 @@ export function DramaAssetBoard({
                         </span>
                         <div>
                           {slotAsset ? (
-                            <img src={slotAsset.url} alt={slot.label} />
+                            <img
+                              src={backendResourceUrl(slotAsset.url)}
+                              alt={slot.label}
+                            />
                           ) : (
                             <ImagePlus size={18} />
                           )}
@@ -1341,7 +1345,10 @@ export function DramaAssetBoard({
                     type="button"
                     onClick={() => chooseAsset(asset.id)}
                   >
-                    <img src={asset.url} alt={assetName(asset)} />
+                    <img
+                      src={backendResourceUrl(asset.url)}
+                      alt={assetName(asset)}
+                    />
                     <span>
                       <strong>{assetName(asset)}</strong>
                       <small>{assetDimensions(asset)}</small>
@@ -1391,7 +1398,7 @@ function AssetPreview({
   }
   return (
     <span className={compact ? "drama-asset-preview compact" : "drama-asset-preview"}>
-      <img src={asset.url} alt={assetName(asset)} />
+      <img src={backendResourceUrl(asset.url)} alt={assetName(asset)} />
     </span>
   );
 }

@@ -1,1 +1,1 @@
-
+"""MivoAi backend application package."""

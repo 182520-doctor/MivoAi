@@ -1,4 +1,4 @@
-import { requireJson } from "../../_shared/api/client";
+import { apiFetch, requireJson } from "../../_shared/api/client";
 
 export async function extractVideoAudio(videoAssetId: string) {
   return requireJson<{
@@ -7,7 +7,7 @@ export async function extractVideoAudio(videoAssetId: string) {
     type: "audio";
     url: string;
   }>(
-    await fetch("/api/media/processing/extract-audio", {
+    await apiFetch("/api/media/processing/extract-audio", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ videoAssetId }),
@@ -26,7 +26,7 @@ export async function normalizeAudio(
     targetLufs: number;
     url: string;
   }>(
-    await fetch("/api/media/processing/normalize-audio", {
+    await apiFetch("/api/media/processing/normalize-audio", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ audioAssetId, targetLufs }),
@@ -50,7 +50,7 @@ export async function transcribeAudio(
     }>;
     url: string;
   }>(
-    await fetch("/api/media/processing/transcribe-audio", {
+    await apiFetch("/api/media/processing/transcribe-audio", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ audioAssetId, language }),
@@ -65,7 +65,7 @@ export async function loadSpeechVoices() {
       culture: string;
       gender?: string;
     }>;
-  }>(await fetch("/api/media/processing/tts/voices"));
+  }>(await apiFetch("/api/media/processing/tts/voices"));
 }
 
 export async function synthesizeSpeech(
@@ -78,7 +78,7 @@ export async function synthesizeSpeech(
     type: "audio";
     url: string;
   }>(
-    await fetch("/api/media/processing/tts", {
+    await apiFetch("/api/media/processing/tts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text, voiceName, rate }),
@@ -96,7 +96,7 @@ export async function upscaleVideo(
     type: "video";
     url: string;
   }>(
-    await fetch("/api/media/processing/upscale-video", {
+    await apiFetch("/api/media/processing/upscale-video", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ videoAssetId, aspectRatio }),

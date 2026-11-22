@@ -1,5 +1,6 @@
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { apiUrl } from "../api/backend";
 
 export function MarkdownContent({ children }: { children: string }) {
   return (
@@ -32,7 +33,9 @@ function browserHref(href?: string) {
     localPath.startsWith("/") &&
     localPath.includes("/runtime/creative-projects/")
   ) {
-    return `/api/creative-projects/file?path=${encodeURIComponent(localPath)}`;
+    return apiUrl(
+      `/api/creative-projects/file?path=${encodeURIComponent(localPath)}`,
+    );
   }
   return href;
 }

@@ -44,6 +44,7 @@ import {
 import { useDramaAssets } from "../../_features/drama/useDramaAssets";
 import { useDramaClips } from "../../_features/drama/useDramaClips";
 import { useDramaProduction } from "../../_features/drama/useDramaProduction";
+import { backendResourceUrl } from "../../../shared/ui/backend-resource";
 import { useModelSettings } from "../../_features/models/useModelSettings";
 import { DramaCandidateHistory } from "./DramaCandidateHistory";
 import { DramaEpisodeAssetShelf } from "./DramaEpisodeAssetShelf";
@@ -123,8 +124,10 @@ export function DramaClipBoard({
     generation.activeShot?.candidates ?? []
   ).filter((candidate) => candidate.slot === "video");
   const activeVideoUrl = generation.activeShot?.videoAssetId
-    ? (assetMap.get(generation.activeShot.videoAssetId)?.url ??
-      mediaAssetUrl(generation.activeShot.videoAssetId))
+    ? backendResourceUrl(
+        assetMap.get(generation.activeShot.videoAssetId)?.url ??
+          mediaAssetUrl(generation.activeShot.videoAssetId),
+      )
     : null;
   const [voices, setVoices] = useState<
     Array<{ name: string; culture: string; gender?: string }>
@@ -593,7 +596,7 @@ export function DramaClipBoard({
                         return (
                           <span key={entity.id} title={entity.name}>
                             {asset ? (
-                              <img src={asset.url} alt="" />
+                              <img src={backendResourceUrl(asset.url)} alt="" />
                             ) : (
                               <Images size={13} />
                             )}

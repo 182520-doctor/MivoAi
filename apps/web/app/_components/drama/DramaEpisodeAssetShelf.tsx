@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import type { LibraryAsset } from "../../_features/assets/types";
 import type { DramaEntity } from "../../_features/drama/types";
+import { backendResourceUrl } from "../../../shared/ui/backend-resource";
 
 type DramaEpisodeAssetShelfProps = {
   entities: DramaEntity[];
@@ -52,7 +53,10 @@ export function DramaEpisodeAssetShelf({
                   return (
                     <article key={entity.id}>
                       {asset ? (
-                        <img src={asset.url} alt={entity.name} />
+                        <img
+                          src={backendResourceUrl(asset.url)}
+                          alt={entity.name}
+                        />
                       ) : (
                         <ImageIcon size={16} />
                       )}

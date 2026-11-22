@@ -1,4 +1,4 @@
-import { getJson, requireJson } from "../../_shared/api/client";
+import { apiFetch, getJson, requireJson } from "../../_shared/api/client";
 import type {
   CreateDramaProjectInput,
   DramaAssetCandidate,
@@ -32,7 +32,7 @@ export function loadDramaProjects(limit = 100) {
 
 export async function createDramaProject(input: CreateDramaProjectInput) {
   return requireJson<DramaProject>(
-    await fetch("/api/drama/projects", {
+    await apiFetch("/api/drama/projects", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(input),
@@ -46,7 +46,7 @@ export async function updateDramaProjectStage(
   status?: string,
 ) {
   return requireJson<DramaProject>(
-    await fetch(`/api/drama/projects/${projectId}`, {
+    await apiFetch(`/api/drama/projects/${projectId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ activeStage, status }),
@@ -69,7 +69,7 @@ export async function createDramaDocument(
   },
 ) {
   return requireJson<DramaDocument>(
-    await fetch(`/api/drama/projects/${projectId}/documents`, {
+    await apiFetch(`/api/drama/projects/${projectId}/documents`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(input),
@@ -83,7 +83,7 @@ export async function updateDramaDocument(
   content: string,
 ) {
   return requireJson<DramaDocument>(
-    await fetch(`/api/drama/projects/documents/${documentId}`, {
+    await apiFetch(`/api/drama/projects/documents/${documentId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title, content }),
@@ -93,7 +93,7 @@ export async function updateDramaDocument(
 
 export async function approveDramaDocument(documentId: string) {
   return requireJson<DramaDocument>(
-    await fetch(
+    await apiFetch(
       `/api/drama/projects/documents/${documentId}/approve`,
       { method: "POST" },
     ),
@@ -147,7 +147,7 @@ export async function decideDramaStage(
   feedback = "",
 ) {
   return requireJson<DramaStageGate>(
-    await fetch(
+    await apiFetch(
       `/api/drama/projects/${projectId}/stages/${stage}/${
         approved ? "approve" : "request-changes"
       }`,
@@ -166,7 +166,7 @@ export async function createDramaEpisode(
   synopsis = "",
 ) {
   return requireJson<DramaEpisode>(
-    await fetch(`/api/drama/projects/${projectId}/episodes`, {
+    await apiFetch(`/api/drama/projects/${projectId}/episodes`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title, synopsis }),
@@ -179,7 +179,7 @@ export async function saveDramaEpisodePlan(
   plan: DramaEpisodePlan,
 ) {
   return requireJson<DramaEpisode>(
-    await fetch(`/api/drama/projects/episodes/${episodeId}/plan`, {
+    await apiFetch(`/api/drama/projects/episodes/${episodeId}/plan`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(plan),
@@ -194,7 +194,7 @@ export async function createDramaScene(
   scriptDocumentId: string | null = null,
 ) {
   return requireJson<DramaScene>(
-    await fetch(
+    await apiFetch(
       `/api/drama/projects/episodes/${episodeId}/scenes`,
       {
         method: "POST",
@@ -219,7 +219,7 @@ export async function createDramaShot(
   },
 ) {
   return requireJson<DramaShot>(
-    await fetch(`/api/drama/projects/scenes/${sceneId}/shots`, {
+    await apiFetch(`/api/drama/projects/scenes/${sceneId}/shots`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(input),
@@ -233,7 +233,7 @@ export async function renderDramaEpisode(
   transitionDuration = 0.4,
 ) {
   return requireJson<DramaEpisode>(
-    await fetch(
+    await apiFetch(
       `/api/drama/projects/episodes/${episodeId}/render`,
       {
         method: "POST",
@@ -249,7 +249,7 @@ export async function saveDramaSubtitles(
   cues: DramaSubtitleCue[],
 ) {
   return requireJson<{ cues: DramaSubtitleCue[] }>(
-    await fetch(
+    await apiFetch(
       `/api/drama/projects/episodes/${episodeId}/subtitles`,
       {
         method: "PUT",
@@ -265,7 +265,7 @@ export async function saveDramaAudioMix(
   input: DramaAudioMix,
 ) {
   return requireJson<DramaAudioMix>(
-    await fetch(
+    await apiFetch(
       `/api/drama/projects/episodes/${episodeId}/audio-mix`,
       {
         method: "PUT",
@@ -281,7 +281,7 @@ export async function saveDramaSubtitleStyle(
   input: DramaSubtitleStyle,
 ) {
   return requireJson<DramaSubtitleStyle>(
-    await fetch(
+    await apiFetch(
       `/api/drama/projects/episodes/${episodeId}/subtitle-style`,
       {
         method: "PUT",
@@ -315,7 +315,7 @@ export async function startDramaProductionRun(
   approvedBy = "local-user",
 ) {
   return requireJson<DramaProductionRun>(
-    await fetch(
+    await apiFetch(
       `/api/drama/projects/production-runs/${runId}/start`,
       {
         method: "POST",
@@ -331,7 +331,7 @@ export async function retryDramaProductionRun(
   approvedBy = "local-user",
 ) {
   return requireJson<DramaProductionRun>(
-    await fetch(
+    await apiFetch(
       `/api/drama/projects/production-runs/${runId}/retry-failed`,
       {
         method: "POST",
@@ -344,7 +344,7 @@ export async function retryDramaProductionRun(
 
 export async function cancelDramaProductionRun(runId: string) {
   return requireJson<DramaProductionRun>(
-    await fetch(
+    await apiFetch(
       `/api/drama/projects/production-runs/${runId}/cancel`,
       { method: "POST" },
     ),
@@ -378,7 +378,7 @@ export async function updateDramaShot(
   > & { reviewNote?: string },
 ) {
   return requireJson<DramaShot>(
-    await fetch(`/api/drama/projects/shots/${shotId}`, {
+    await apiFetch(`/api/drama/projects/shots/${shotId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(input),
@@ -392,7 +392,7 @@ export async function saveDramaShotPrompt(
   prompt: string,
 ) {
   return requireJson<DramaShot>(
-    await fetch(
+    await apiFetch(
       `/api/drama/projects/shots/${shotId}/prompts/${encodeURIComponent(slot)}`,
       {
         method: "PUT",
@@ -408,7 +408,7 @@ export async function updateDramaShotDirection(
   direction: DramaShotDirection,
 ) {
   return requireJson<DramaShot>(
-    await fetch(`/api/drama/projects/shots/${shotId}/direction`, {
+    await apiFetch(`/api/drama/projects/shots/${shotId}/direction`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(direction),
@@ -431,7 +431,7 @@ export async function createDramaEntity(
   },
 ) {
   return requireJson<DramaEntity>(
-    await fetch(`/api/drama/projects/${projectId}/entities`, {
+    await apiFetch(`/api/drama/projects/${projectId}/entities`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(input),
@@ -454,7 +454,7 @@ export async function updateDramaEntity(
   },
 ) {
   return requireJson<DramaEntity>(
-    await fetch(`/api/drama/projects/entities/${entityId}`, {
+    await apiFetch(`/api/drama/projects/entities/${entityId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(input),
@@ -468,7 +468,7 @@ export async function bindDramaEntityAsset(
   assetId: string,
 ) {
   return requireJson<DramaEntity>(
-    await fetch(
+    await apiFetch(
       `/api/drama/projects/entities/${entityId}/asset-slots/${encodeURIComponent(slot)}`,
       {
         method: "PUT",
@@ -485,7 +485,7 @@ export async function saveDramaEntityPrompt(
   prompt: string,
 ) {
   return requireJson<DramaEntity>(
-    await fetch(
+    await apiFetch(
       `/api/drama/projects/entities/${entityId}/prompts/${encodeURIComponent(slot)}`,
       {
         method: "PUT",
@@ -502,7 +502,7 @@ export async function bindDramaShotAsset(
   assetId: string,
 ) {
   return requireJson<DramaShot>(
-    await fetch(
+    await apiFetch(
       `/api/drama/projects/shots/${shotId}/asset-slots/${encodeURIComponent(slot)}`,
       {
         method: "PUT",
@@ -518,7 +518,7 @@ export async function updateDramaAssetCandidate(
   status: "candidate" | "selected" | "rejected",
 ) {
   return requireJson<DramaAssetCandidate>(
-    await fetch(
+    await apiFetch(
       `/api/drama/projects/asset-candidates/${candidateId}`,
       {
         method: "PATCH",
@@ -531,7 +531,7 @@ export async function updateDramaAssetCandidate(
 
 export async function loadDramaShotReferences(shotId: string) {
   return requireJson<{ references: DramaEntityReference[] }>(
-    await fetch(`/api/drama/projects/shots/${shotId}/references`),
+    await apiFetch(`/api/drama/projects/shots/${shotId}/references`),
   );
 }
 
@@ -540,7 +540,7 @@ export async function updateDramaShotReferences(
   references: DramaEntityReference[],
 ) {
   return requireJson<{ references: DramaEntityReference[] }>(
-    await fetch(`/api/drama/projects/shots/${shotId}/references`, {
+    await apiFetch(`/api/drama/projects/shots/${shotId}/references`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ references }),

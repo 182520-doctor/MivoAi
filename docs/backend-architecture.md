@@ -2,6 +2,9 @@
 
 日期：2026-11-22
 
+> 工程强制规范以根目录 [`AGENTS.md`](../AGENTS.md) 为准。本文说明架构背景和
+> 请求流程；新增代码必须遵循 `AGENTS.md` 中的目录和依赖约束。
+
 ## 设计目标
 
 后端采用**限界上下文优先的模块化单体**。每个业务模块独立维护自己的 HTTP Schema、应用用例、领域对象、端口和基础设施适配器；会话、生成任务、供应商路由与素材不再共享一个业务服务或 Repository。
@@ -17,66 +20,29 @@
 
 ```text
 apps/api/app
-├── contexts
-│   ├── conversations
-│   │   ├── application.py
-│   │   ├── commands.py
-│   │   ├── domain.py
-│   │   ├── events.py
-│   │   ├── ports.py
-│   │   ├── routes.py
-│   │   ├── runtime.py
-│   │   ├── schemas.py
-│   │   └── infrastructure
-│   │       ├── codex_app_server.py
-│   │       ├── history.py
-│   │       └── repository.py
+├── modules
+│   └── <domain>
+│       ├── domain.py
+│       ├── application.py
+│       ├── commands.py
+│       ├── ports.py
+├── delivery
+│   ├── http
+│   │   ├── api.py
+│   │   ├── routes
+│   │   ├── schemas
+│   │   └── errors.py
+│   └── agent
+├── adapters
+│   ├── persistence
+│   │   ├── database.py
+│   │   └── sqlite
+│   ├── codex
+│   ├── comfyui
 │   ├── providers
-│   │   ├── application.py
-│   │   ├── commands.py
-│   │   ├── ports.py
-│   │   ├── repository.py
-│   │   ├── routes.py
-│   │   ├── schemas.py
-│   │   └── infrastructure
-│   │       ├── media_gateway.py
-│   │       └── volcengine.py
-│   ├── media_generation
-│   │   ├── application.py
-│   │   ├── commands.py
-│   │   ├── ports.py
-│   │   ├── repository.py
-│   │   ├── routes.py
-│   │   └── schemas.py
-│   ├── media_processing
-│   │   ├── application.py
-│   │   ├── ports.py
-│   │   ├── routes.py
-│   │   ├── schemas.py
-│   │   └── infrastructure
-│   │       └── ffmpeg.py
-│   ├── assets
-│   │   ├── application.py
-│   │   ├── ports.py
-│   │   ├── repository.py
-│   │   ├── routes.py
-│   │   └── infrastructure
-│   │       └── downloader.py
-│   └── system
-│       └── routes.py
+│   ├── media
+│   └── workspaces
 ├── shared
-│   ├── config.py
-│   ├── errors.py
-│   ├── model_routing.py
-│   ├── protocol_logging.py
-│   ├── secrets.py
-│   ├── security.py
-│   └── sse.py
-├── infrastructure
-│   └── persistence
-│       └── database.py
-├── interfaces
-│   └── errors.py
 ├── composition.py
 └── main.py
 ```
@@ -181,7 +147,7 @@ composition
 - `main.py` 只注册路由和生命周期。
 
 当前 SQLite 仍是单一物理数据库，因此建表和索引集中在
-`infrastructure/persistence/database.py`。业务查询已经按上下文拆到独立
+`adapters/persistence/database.py`。业务查询已经按领域模块拆到独立
 Repository；后续如果某个模块迁移到独立数据库，只需把对应建表和迁移随上下文一起移走。
 
 `tests/test_architecture.py` 会检查：
@@ -193,7 +159,7 @@ Repository；后续如果某个模块迁移到独立数据库，只需把对应�
 
 ## 新会话请求流程
 
-1. `conversations/routes.py` 验证 `MessageCreate`。
+1. `delivery/http/routes/conversations.py` 验证 `MessageCreate`。
 2. `ConversationService` 检查会话、并发和幂等提交。
 3. `ConversationRepository` 原子创建 Turn、用户消息和助手占位消息。
 4. `ConversationModelGateway` 返回 `TextModelRoute`。
@@ -204,7 +170,7 @@ Repository；后续如果某个模块迁移到独立数据库，只需把对应�
 
 ## 媒体生成流程
 
-1. `media_generation/routes.py` 接收 `GenerationCreate`。
+1. `delivery/http/routes/media_generation.py` 接收 `GenerationCreate`。
 2. `GenerationService` 通过 `MediaModelResolver` 校验 Provider、模型和能力。
 3. `GenerationTaskRepository` 先落任务，再启动后台执行。
 4. `MediaProviderGateway` 调用当前供应商 Adapter。
@@ -223,7 +189,7 @@ Repository；后续如果某个模块迁移到独立数据库，只需把对应�
 
 ### 增加 ComfyUI
 
-1. 新增 `providers/infrastructure/comfyui.py`；
+1. 新增 `adapters/comfyui/` 适配器；
 2. 实现提交、状态、取消和结果下载；
 3. 通过 `MediaProviderGateway` 路由到 ComfyUI；
 4. 素材仍由 Asset 上下文登记；
@@ -231,7 +197,7 @@ Repository；后续如果某个模块迁移到独立数据库，只需把对应�
 
 ### 增加短剧模块
 
-新增 `contexts/drama`，拥有：
+`modules/drama` 拥有：
 
 - Drama Project；
 - Story Bible；
@@ -245,7 +211,9 @@ Repository；后续如果某个模块迁移到独立数据库，只需把对应�
 
 ### 替换数据库
 
-保持应用端口不变，在 `infrastructure/persistence` 增加 PostgreSQL Repository 实现，并在 `composition.py` 替换即可。视频异步任务开始使用独立 Worker 时，应继续复用 `GenerationTaskRepositoryPort`。
+保持应用端口不变，在 `adapters/persistence` 增加 PostgreSQL Repository
+实现，并在 `composition.py` 替换即可。视频异步任务开始使用独立 Worker
+时，应继续复用 `GenerationTaskRepositoryPort`。
 
 ## 验证命令
 

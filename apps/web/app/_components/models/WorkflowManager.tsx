@@ -41,6 +41,7 @@ import type {
   WorkflowParameter,
   WorkflowTopology,
 } from "../../_features/workflows/types";
+import { backendResourceUrl } from "../../../shared/ui/backend-resource";
 
 type WorkflowManagerProps = {
   onModelsChanged: () => Promise<void> | void;
@@ -975,8 +976,11 @@ export function WorkflowManager({ onModelsChanged }: WorkflowManagerProps) {
             capability: "image_generation" as const,
           };
           const result = results[item.filename];
-          const testAssetUrl = result?.testAssetUrl ??
+          const testAssetPath = result?.testAssetUrl ??
             (item.testAssetId ? `/api/assets/${item.testAssetId}` : null);
+          const testAssetUrl = testAssetPath
+            ? backendResourceUrl(testAssetPath)
+            : null;
           const referenceParameters = item.parameters.filter(
             (parameter) => parameter.type === "assets",
           );
@@ -1214,8 +1218,9 @@ export function WorkflowManager({ onModelsChanged }: WorkflowManagerProps) {
                                 {assetType === "image" ? (
                                   <img
                                     src={
-                                      asset?.url ??
-                                      `/api/assets/${assetId}`
+                                      backendResourceUrl(
+                                        asset?.url ?? `/api/assets/${assetId}`,
+                                      )
                                     }
                                     alt={`测试参考${config.noun} ${index + 1}`}
                                   />

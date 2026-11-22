@@ -1,4 +1,6 @@
-from app.services.codex_events import TurnEventNormalizer
+from app.adapters.codex.events import (
+    TurnEventNormalizer,
+)
 
 
 def test_commentary_and_final_answer_stream_to_separate_areas():

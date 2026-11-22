@@ -25,8 +25,7 @@
 ```text
 Browser
   -> Next.js (127.0.0.1:3000)
-  -> /api rewrite
-  -> FastAPI (127.0.0.1:8010)
+  -> FastAPI HTTP / WebSocket (127.0.0.1:8010)
   -> Codex App Server (stdio / JSON-RPC)
   -> Codex account and remote model
 ```
@@ -37,15 +36,19 @@ Browser
 - `apps/web/app/_components`：工作台、会话、消息和设置等展示组件
 - `apps/web/app/_shared`：前端通用 HTTP 客户端
 - `apps/web/app/page.tsx`：仅作为路由入口，渲染客户端工作台
-- `apps/api/app/contexts`：按限界上下文拆分的业务模块
+- `apps/api/app/modules`：按限界上下文拆分的领域与应用用例
   - `conversations`：会话、Agent 运行时和流式回复
+  - `creative_projects`：小说/剧本工作区、产物与质量检查
+  - `drama`：分集、场次、镜头、审核与生产运行
   - `providers`：供应商目录、凭证、文本路由和媒体 Adapter
+  - `workflows`：ComfyUI 工作流导入、参数映射与模型注册
   - `media_generation`：统一图片/视频生成任务
   - `assets`：素材登记、下载和内容访问
-  - `system`：健康检查和兼容接口
+  - `media_processing`：FFmpeg、TTS、字幕与确定性媒体处理
+- `apps/api/app/delivery/http`：统一 HTTP 路由、Schema 和错误映射入口
+- `apps/api/app/delivery/agent`：统一 Agent 工具适配器
+- `apps/api/app/adapters`：SQLite、Codex、ComfyUI、媒体和工作区适配器
 - `apps/api/app/shared`：配置、错误、SSE、安全、凭证加密等共享内核
-- `apps/api/app/infrastructure/persistence`：SQLite 连接和结构初始化
-- `apps/api/app/interfaces`：共享 HTTP 异常转换
 - `apps/api/app/composition.py`：依赖装配入口，只有这里绑定具体实现
 - `apps/api/app/main.py`：FastAPI 应用工厂和路由注册
 - `vendor/codex`：固定版本的官方 Codex 可执行文件、压缩包和协议 schema
@@ -53,6 +56,7 @@ Browser
 
 完整的 DDD 模块边界、依赖规则和调用流程见
 [`docs/backend-architecture.md`](docs/backend-architecture.md)。
+强制工程规范以根目录 [`AGENTS.md`](AGENTS.md) 为准。
 
 前端功能域、组件和状态边界见
 [`docs/frontend-architecture.md`](docs/frontend-architecture.md)。
@@ -90,16 +94,20 @@ uv run python scripts/start_local.py
 后端：
 
 ```bash
-cd /Users/hwx/Documents/Codex/2026-09-04/an/work/ai-dev-starter/apps/api
+cd apps/api
 uv run uvicorn app.main:app --host 127.0.0.1 --port 8010
 ```
 
 前端：
 
 ```bash
-cd /Users/hwx/Documents/Codex/2026-09-04/an/work/ai-dev-starter/apps/web
+cd apps/web
 pnpm dev --hostname 127.0.0.1 --port 3000
 ```
+
+ComfyUI 使用 `8000`，MivoAi API 使用 `8010`。前端 HTTP 和 WebSocket
+都直接访问 FastAPI，不经过 Next.js `/api` 代理。如果手动修改 API 端口，
+需为前端设置对应的 `NEXT_PUBLIC_API_BASE_URL`。推荐使用根目录的一键启动脚本。
 
 ## 验证
 

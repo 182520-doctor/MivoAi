@@ -1,9 +1,9 @@
-import { getJson, requireJson } from "../../_shared/api/client";
+import { apiFetch, apiUrl, getJson, requireJson } from "../../_shared/api/client";
 import type { MediaGenerationInput, MediaTask } from "./types";
 
 export async function createMediaTask(input: MediaGenerationInput) {
   return requireJson<MediaTask>(
-    await fetch("/api/generations", {
+    await apiFetch("/api/generations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(input),
@@ -15,7 +15,7 @@ export async function uploadMediaAssets(files: File[]) {
   const body = new FormData();
   for (const file of files) body.append("files", file);
   return requireJson<{ assetIds: string[] }>(
-    await fetch("/api/assets/upload", {
+    await apiFetch("/api/assets/upload", {
       method: "POST",
       body,
     }),
@@ -53,5 +53,5 @@ export async function pollMediaTask(
 }
 
 export function mediaAssetUrl(assetId: string) {
-  return `/api/assets/${assetId}`;
+  return apiUrl(`/api/assets/${assetId}`);
 }

@@ -5,54 +5,60 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from app.contexts.assets.application import AssetService
-from app.contexts.assets.infrastructure.downloader import HttpAssetFetcher
-from app.contexts.assets.repository import AssetRepository
-from app.contexts.conversations.application import ConversationService
-from app.contexts.conversations.infrastructure.codex_app_server import (
+from app.adapters.codex.app_server import (
     CodexAppServerClient,
 )
-from app.contexts.conversations.infrastructure.repository import ConversationRepository
-from app.contexts.conversations.ports import CodexClient
-from app.contexts.conversations.workspace import ConversationWorkspaceManager
-from app.contexts.drama.application import DramaProjectService
-from app.contexts.drama.infrastructure.production_media import (
-    GenerationProductionMediaAdapter,
-)
-from app.contexts.drama.ports import (
-    DramaProductionMediaPort,
-    DramaTimelineRendererPort,
-)
-from app.contexts.drama.repository import DramaProjectRepository
-from app.contexts.drama.workspace import DramaWorkspaceManager
-from app.contexts.media_generation.application import GenerationService
-from app.contexts.media_generation.repository import GenerationTaskRepository
-from app.contexts.media_processing.application import MediaProcessingService
-from app.contexts.media_processing.infrastructure.ffmpeg import (
+from app.adapters.comfyui.client import ComfyUIClient
+from app.adapters.media.downloader import HttpAssetFetcher
+from app.adapters.media.ffmpeg import (
     FFmpegAudioExtractor,
     FFmpegAudioNormalizer,
     FFmpegVideoComposer,
     FFmpegVideoUpscaler,
     FFmpegWhisperTranscriber,
 )
-from app.contexts.media_processing.infrastructure.windows_speech import (
+from app.adapters.media.production_media import (
+    GenerationProductionMediaAdapter,
+)
+from app.adapters.media.speech import (
     WindowsSapiSpeechSynthesizer,
 )
-from app.contexts.providers.application import ProviderService
-from app.contexts.providers.infrastructure.comfyui import ComfyUIClient
-from app.contexts.providers.infrastructure.media_gateway import MediaProviderGateway
-from app.contexts.providers.infrastructure.volcengine import VolcengineChatClient
-from app.contexts.providers.repository import ProviderRepository
-from app.contexts.workflows.application import WorkflowService
-from app.contexts.workflows.repository import ComfyWorkflowRepository
-from app.db.repositories import CreativeProjectRepository
-from app.infrastructure.persistence.database import Database
-from app.interfaces.agent_media_tools import (
+from app.adapters.persistence.database import Database
+from app.adapters.persistence.sqlite.assets import AssetRepository
+from app.adapters.persistence.sqlite.conversations import ConversationRepository
+from app.adapters.persistence.sqlite.creative_projects import (
+    CreativeProjectRepository,
+)
+from app.adapters.persistence.sqlite.drama import DramaProjectRepository
+from app.adapters.persistence.sqlite.media_generation import (
+    GenerationTaskRepository,
+)
+from app.adapters.persistence.sqlite.providers import ProviderRepository
+from app.adapters.persistence.sqlite.workflows import (
+    ComfyWorkflowRepository,
+)
+from app.adapters.providers.media_gateway import MediaProviderGateway
+from app.adapters.providers.volcengine import VolcengineChatClient
+from app.adapters.workspaces.conversations import ConversationWorkspaceManager
+from app.adapters.workspaces.drama import DramaWorkspaceManager
+from app.delivery.agent.media_tools import (
     AgentMediaToolService,
     media_dynamic_tool_specs,
 )
-from app.services.creative_project_service import CreativeProjectService
-from app.services.quality_gate_service import QualityGateService
+from app.modules.assets import AssetService
+from app.modules.conversations import ConversationService
+from app.modules.conversations.ports import CodexClient
+from app.modules.creative_projects import CreativeProjectService
+from app.modules.creative_projects.domain import CreativeProjectQualityPolicy
+from app.modules.drama import DramaProjectService
+from app.modules.drama.ports import (
+    DramaProductionMediaPort,
+    DramaTimelineRendererPort,
+)
+from app.modules.media_generation import GenerationService
+from app.modules.media_processing import MediaProcessingService
+from app.modules.providers import ProviderService
+from app.modules.workflows import WorkflowService
 from app.shared.config import Settings
 from app.shared.secrets import SecretBox
 
@@ -156,6 +162,7 @@ def build_container(
         comfyui_client,
         asset_service,
     )
+    creative_quality_policy = CreativeProjectQualityPolicy()
     conversation_service = ConversationService(
         conversation_repository,
         client,
@@ -163,11 +170,12 @@ def build_container(
         generation_service,
         workspace_manager,
         creative_projects=creative_repository,
-        quality_gate=QualityGateService(),
+        quality_gate=creative_quality_policy,
     )
     creative_project_service = CreativeProjectService(
         creative_repository,
         settings.creative_workspace_dir,
+        quality_policy=creative_quality_policy,
     )
     return ApplicationContainer(
         settings=settings,

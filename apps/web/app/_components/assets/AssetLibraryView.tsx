@@ -21,6 +21,7 @@ import type {
   AssetLibraryResponse,
   LibraryAsset,
 } from "../../_features/assets/types";
+import { backendResourceUrl } from "../../../shared/ui/backend-resource";
 
 const assetTypes = [
   { type: "image", label: "图片素材", icon: FileImage },
@@ -209,9 +210,9 @@ function AssetCard({ asset }: { asset: LibraryAsset }) {
     <article className="asset-library-card">
       <div className="asset-library-preview">
         {asset.type === "image" ? (
-          <img src={asset.url} alt="图片素材" />
+          <img src={backendResourceUrl(asset.url)} alt="图片素材" />
         ) : asset.type === "video" ? (
-          <video src={asset.url} muted controls />
+          <video src={backendResourceUrl(asset.url)} muted controls />
         ) : asset.type === "audio" ? (
           <FileAudio size={34} />
         ) : (

@@ -53,6 +53,7 @@ import { useDramaAssets } from "../../_features/drama/useDramaAssets";
 import { useDramaControlRoom } from "../../_features/drama/useDramaControlRoom";
 import { useDramaDocuments } from "../../_features/drama/useDramaDocuments";
 import { useDramaProduction } from "../../_features/drama/useDramaProduction";
+import { backendResourceUrl } from "../../../shared/ui/backend-resource";
 import { useAppTheme } from "../shell/ThemeProvider";
 
 type DramaCanvasBoardProps = {
@@ -733,7 +734,7 @@ export function DramaCanvasBoard({
                                   <span key={entity.id} title={entity.name}>
                                     {primary ? (
                                       <img
-                                        src={primary.url}
+                                        src={backendResourceUrl(primary.url)}
                                         alt={entity.name}
                                       />
                                     ) : (
@@ -793,7 +794,10 @@ export function DramaCanvasBoard({
                             <div className="drama-canvas-shot">
                               <span>
                                 {frame ? (
-                                  <img src={frame.url} alt={shot.title} />
+                                  <img
+                                    src={backendResourceUrl(frame.url)}
+                                    alt={shot.title}
+                                  />
                                 ) : (
                                   <ImageIcon size={20} />
                                 )}

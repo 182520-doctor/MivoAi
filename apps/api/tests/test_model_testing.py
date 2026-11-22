@@ -1,8 +1,8 @@
 from fastapi.testclient import TestClient
 
-from app.contexts.media_generation.schemas import GenerationCreate
-from app.contexts.providers.application import _public_workflow_inputs
+from app.delivery.http.schemas.media_generation import GenerationCreate
 from app.main import create_app
+from app.modules.providers.application import _public_workflow_inputs
 from app.shared.semantic_parameters import dimensions_for_resolution
 from tests.fakes import FakeCodexClient
 

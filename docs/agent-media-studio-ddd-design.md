@@ -345,40 +345,36 @@ data/assets/{project_id}/{asset_id}/{version_id}/{safe_filename}
 
 ## 6. 代码组织结构
 
-建议从当前技术层结构逐步迁移为“上下文优先，上下文内再分层”：
+当前采用“领域模块 + 集中交付层 + 集中适配器层”：
 
 ```text
 apps/api/app/
-├── shared/
-│   ├── domain/
-│   │   ├── ids.py
-│   │   ├── events.py
-│   │   ├── errors.py
-│   │   └── types.py
-│   ├── ports/
-│   │   ├── clock.py
-│   │   ├── unit_of_work.py
-│   │   ├── event_publisher.py
-│   │   └── asset_storage.py
-│   └── infrastructure/
-├── contexts/
-│   ├── projects/
+├── modules/
+│   ├── creative_projects/
 │   ├── conversations/
 │   ├── media_generation/
-│   ├── workflow_runtime/
+│   ├── workflows/
 │   ├── assets/
 │   ├── providers/
 │   └── drama/
 │       ├── domain/
 │       ├── application/
-│       ├── infrastructure/
-│       └── interfaces/
-├── agent/
-│   ├── tool_registry.py
-│   ├── tool_executor.py
-│   └── context_builder.py
-├── api/
-│   └── routes/
+│       └── ports.py
+├── delivery/
+│   ├── http/
+│   │   ├── api.py
+│   │   ├── routes/
+│   │   ├── schemas/
+│   │   └── errors.py
+│   └── agent/
+├── adapters/
+│   ├── persistence/
+│   ├── codex/
+│   ├── comfyui/
+│   ├── providers/
+│   ├── media/
+│   └── workspaces/
+├── shared/
 ├── worker/
 │   ├── scheduler.py
 │   ├── generation_worker.py
@@ -388,25 +384,15 @@ apps/api/app/
 └── main.py
 ```
 
-每个上下文内部遵循：
+业务模块统一采用：
 
 ```text
-domain/
-  entities.py
-  value_objects.py
-  aggregates.py
-  events.py
-  policies.py
-  ports.py
-application/
-  use_cases.py
-  handlers.py
-infrastructure/
-  repositories.py
-  adapters.py
-interfaces/
-  schemas.py
-  routers.py
+modules/<domain>/
+  __init__.py       公共入口
+  domain.py         实体、值对象、策略
+  application.py    用例编排
+  commands.py       应用命令
+  ports.py          应用所需端口
 ```
 
 依赖规则：
@@ -1266,8 +1252,8 @@ GET    /api/timelines/{timeline_id}
 drama/
   domain.py       项目、分集计划、资产槽位、镜头槽位、角色手册、审核记录
   application.py  分集规划、镜头规划、角色审核、用户放行、连续性审计
-  repository.py   SQLite 持久化与重启恢复
-  routes.py       制作控制室、审核、分集计划、资产与镜头槽位 API
+adapters/persistence/sqlite/drama.py       SQLite 持久化与重启恢复
+delivery/http/routes/drama.py              制作控制室、审核、分集计划、资产与镜头槽位 API
 ```
 
 ### 19.1 专业角色

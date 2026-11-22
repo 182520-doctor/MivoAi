@@ -42,17 +42,20 @@ uv run fastapi dev app/main.py
 uv run python -m app.main
 ```
 
-默认监听地址为：
+手动启动默认监听地址为：
 
 ```text
-http://127.0.0.1:8000
+http://127.0.0.1:8010
 ```
 
 健康检查：
 
 ```powershell
-Invoke-RestMethod http://127.0.0.1:8000/health
+Invoke-RestMethod http://127.0.0.1:8010/health
 ```
+
+`8000` 是本地 ComfyUI 的默认端口；MivoAi API 使用 `8010`，两者不能混用。
+前端直接访问 FastAPI 的 `8010`，不经过 Next.js `/api` 代理。
 
 ## 常用命令
 
@@ -128,7 +131,7 @@ HTTP 200 和 `turn/started` 仅表示请求已接收；模型回复应出现 `it
 - `POST /api/conversations`：创建会话
 - `GET /api/conversations/{conversation_id}/messages`：读取会话消息
 - `WS /api/conversations/{conversation_id}/ws`：发送消息、接收流式事件和中断
-- `POST /api/conversations/{conversation_id}/messages`：已移除，返回 410
+- `POST /api/conversations/{conversation_id}/messages`：兼容旧客户端的 SSE 流式接口
 - `POST /api/conversations/{conversation_id}/interrupt`：中断会话
 - `GET /api/models`：模型列表
 - `GET /api/preferences`：读取偏好配置
@@ -145,8 +148,8 @@ HTTP 200 和 `turn/started` 仅表示请求已接收；模型回复应出现 `it
 浏览器进入会话时创建一个连接，同一会话的连续回合和中断复用该连接。
 回合结束不关闭连接；切换会话或离开页面时关闭。历史记录继续通过 HTTP 读取。
 
-本地默认直连 `ws://127.0.0.1:8000/api/conversations/{id}/ws`（主机名随网页地址）。
-前端可在启动或构建前设置 `NEXT_PUBLIC_API_WS_URL`，例如 `ws://127.0.0.1:8000`。
+本地默认直连 `ws://127.0.0.1:8010/api/conversations/{id}/ws`（主机名随网页地址）。
+前端可在启动或构建前设置 `NEXT_PUBLIC_API_WS_URL`，例如 `ws://127.0.0.1:8010`。
 HTTPS 网页默认连接同域 `wss://`，需要反向代理将 `/api/conversations/*/ws` 的
 WebSocket Upgrade 请求转发到 FastAPI，并在代理处终止 TLS。Next.js 的 HTTP rewrite
 不作为本地 WebSocket 链路。生产域名必须加入后端 `Settings.allowed_origins` 和
@@ -189,11 +192,30 @@ WebSocket Upgrade 请求转发到 FastAPI，并在代理处终止 TLS。Next.js 
 
 ```text
 app/
-  api/          HTTP 路由和错误处理
-  core/         配置、安全、接口和异常定义
-  db/           SQLite 数据库与仓储
-  models/       请求和响应模型
-  services/     业务服务与外部集成
-  utils/        SSE、历史记录等工具
-tests/          测试用例
+  modules/
+    <domain>/
+      __init__.py
+      domain.py
+      application.py
+      ports.py
+  delivery/
+    http/
+      api.py
+      routes/
+      schemas/
+      errors.py
+    agent/
+  adapters/
+    persistence/
+    codex/
+    comfyui/
+    providers/
+    media/
+    workspaces/
+  shared/
+  composition.py
+  main.py
+tests/
 ```
+
+工程强制规范以仓库根目录的 `AGENTS.md` 为准。

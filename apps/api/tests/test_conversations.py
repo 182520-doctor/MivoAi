@@ -5,17 +5,17 @@ import pytest
 from fastapi.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
-from app.contexts.conversations.application import (
+from app.adapters.persistence.database import Database
+from app.adapters.persistence.sqlite.conversations import (
+    ConversationRepository,
+)
+from app.main import create_app
+from app.modules.conversations.application import (
     derive_conversation_title,
     request_turn_interrupt,
     visible_user_message,
 )
-from app.contexts.conversations.infrastructure.repository import (
-    ConversationRepository,
-)
-from app.contexts.conversations.runtime import ActiveTurn
-from app.infrastructure.persistence.database import Database
-from app.main import create_app
+from app.modules.conversations.runtime import ActiveTurn
 from app.shared.errors import AppServerError
 from tests.fakes import FakeCodexClient
 

@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from app.contexts.conversations.infrastructure.codex_app_server import (
+from app.adapters.codex.app_server import (
     CodexAppServerClient,
     _subprocess_startup_options,
 )
@@ -11,11 +11,11 @@ from app.contexts.conversations.infrastructure.codex_app_server import (
 
 def test_subprocess_startup_hides_windows_console(monkeypatch) -> None:
     monkeypatch.setattr(
-        "app.contexts.conversations.infrastructure.codex_app_server.os.name",
+        "app.adapters.codex.app_server.os.name",
         "nt",
     )
     monkeypatch.setattr(
-        "app.contexts.conversations.infrastructure.codex_app_server."
+        "app.adapters.codex.app_server."
         "subprocess.CREATE_NO_WINDOW",
         0x08000000,
         raising=False,
@@ -26,7 +26,7 @@ def test_subprocess_startup_hides_windows_console(monkeypatch) -> None:
 
 def test_subprocess_startup_options_are_empty_off_windows(monkeypatch) -> None:
     monkeypatch.setattr(
-        "app.contexts.conversations.infrastructure.codex_app_server.os.name",
+        "app.adapters.codex.app_server.os.name",
         "posix",
     )
 
@@ -55,7 +55,7 @@ def test_start_reports_provider_authentication_requirements(
     process.wait = AsyncMock()
     spawn = AsyncMock(return_value=process)
     monkeypatch.setattr(
-        "app.contexts.conversations.infrastructure.codex_app_server."
+        "app.adapters.codex.app_server."
         "asyncio.create_subprocess_exec",
         spawn,
     )

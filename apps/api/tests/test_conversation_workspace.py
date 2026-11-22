@@ -1,14 +1,14 @@
 import asyncio
 from pathlib import Path
 
-from app.contexts.conversations.application import ConversationService
-from app.contexts.conversations.domain import TOOL_RUNTIME_VERSION
-from app.contexts.conversations.infrastructure.codex_app_server import (
+from app.adapters.codex.app_server import (
     CodexAppServerClient,
 )
-from app.contexts.conversations.infrastructure.repository import ConversationRepository
-from app.contexts.conversations.workspace import ConversationWorkspaceManager
-from app.infrastructure.persistence.database import Database
+from app.adapters.persistence.database import Database
+from app.adapters.persistence.sqlite.conversations import ConversationRepository
+from app.adapters.workspaces.conversations import ConversationWorkspaceManager
+from app.modules.conversations.application import ConversationService
+from app.modules.conversations.domain import TOOL_RUNTIME_VERSION
 from tests.fakes import FakeCodexClient
 
 

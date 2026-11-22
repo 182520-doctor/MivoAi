@@ -1,9 +1,11 @@
 import json
 from pathlib import Path
 
-from app.contexts.media_generation.repository import GenerationTaskRepository
-from app.contexts.media_processing.application import MediaProcessingService
-from app.infrastructure.persistence.database import Database
+from app.adapters.persistence.database import Database
+from app.adapters.persistence.sqlite.media_generation import (
+    GenerationTaskRepository,
+)
+from app.modules.media_processing.application import MediaProcessingService
 
 
 class FakeArtifacts:

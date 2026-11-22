@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-import socket
+import os
+import subprocess
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -12,22 +13,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from app.api.routes.creative_projects import create_creative_project_router
 from app.composition import build_container
-from app.contexts.assets.routes import create_asset_router
-from app.contexts.conversations.ports import CodexClient
-from app.contexts.conversations.routes import create_conversation_router
-from app.contexts.drama.ports import (
+from app.delivery.http.api import register_http_routes
+from app.delivery.http.errors import register_exception_handlers
+from app.modules.conversations.ports import CodexClient
+from app.modules.drama.ports import (
     DramaProductionMediaPort,
     DramaTimelineRendererPort,
 )
-from app.contexts.drama.routes import create_drama_router
-from app.contexts.media_generation.routes import create_generation_router
-from app.contexts.media_processing.routes import create_media_processing_router
-from app.contexts.providers.routes import create_provider_router
-from app.contexts.system.routes import create_status_router
-from app.contexts.workflows.routes import create_workflow_router
-from app.interfaces.errors import register_exception_handlers
 from app.shared.config import Settings
 from app.shared.security import is_origin_allowed
 
@@ -114,22 +107,11 @@ def create_app(
         allow_headers=["*"],
     )
     register_exception_handlers(api)
-    api.include_router(create_status_router(codex_client))
-    api.include_router(
-        create_conversation_router(
-            conversation_service,
-            app_settings.allowed_origins,
-        )
+    register_http_routes(
+        api,
+        container,
+        allowed_origins=app_settings.allowed_origins,
     )
-    api.include_router(
-        create_creative_project_router(creative_project_service)
-    )
-    api.include_router(create_provider_router(provider_service))
-    api.include_router(create_generation_router(generation_service))
-    api.include_router(create_media_processing_router(media_processing_service))
-    api.include_router(create_asset_router(asset_service))
-    api.include_router(create_workflow_router(workflow_service))
-    api.include_router(create_drama_router(drama_service))
     return api
 
 
@@ -137,22 +119,52 @@ app_settings = Settings.from_env()
 app = create_app(settings=app_settings)
 
 
-def _available_port(preferred: int) -> int:
-    for port in range(preferred, preferred + 50):
-        try:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-                sock.bind(("127.0.0.1", port))
-            return port
-        except OSError:
+def _parse_listening_ports(output: str) -> set[int]:
+    ports: set[int] = set()
+    for line in output.splitlines():
+        parts = line.split()
+        if len(parts) < 4:
             continue
-    raise RuntimeError(f"No free backend port found near {preferred}")
+        if parts[-2].upper() not in {"LISTEN", "LISTENING", "侦听"}:
+            continue
+        address = parts[1] if parts[0] == "TCP" else parts[3]
+        if ":" not in address:
+            continue
+        try:
+            ports.add(int(address.rsplit(":", 1)[1]))
+        except ValueError:
+            continue
+    return ports
+
+
+def _listening_ports() -> set[int]:
+    command = ["netstat", "-ano"] if os.name == "nt" else ["ss", "-lnt"]
+    try:
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            check=False,
+            encoding="utf-8",
+            errors="replace",
+            timeout=5,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return set()
+    return _parse_listening_ports(result.stdout) if result.returncode == 0 else set()
+
+
+def _ensure_port_is_available(port: int) -> None:
+    if port in _listening_ports():
+        raise SystemExit(
+            f"Backend port {port} is already in use. Stop the old process first."
+        )
 
 
 if __name__ == "__main__":
-    port = _available_port(app_settings.api_port)
-    if port != app_settings.api_port:
-        print(
-            f"Port {app_settings.api_port} is in use; using backend port {port}",
-            flush=True,
-        )
-    uvicorn.run(app, host="127.0.0.1", port=port, reload=True)
+    _ensure_port_is_available(app_settings.api_port)
+    uvicorn.run(
+        app,
+        host="127.0.0.1",
+        port=app_settings.api_port,
+        reload=True,
+    )

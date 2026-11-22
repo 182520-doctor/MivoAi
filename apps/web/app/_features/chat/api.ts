@@ -1,4 +1,4 @@
-import { getJson, requireJson } from "../../_shared/api/client";
+import { apiFetch, getJson, requireJson } from "../../_shared/api/client";
 import type {
   ConversationHistory,
   ConversationSummary,
@@ -18,7 +18,7 @@ export async function createConversation(
   },
 ) {
   return requireJson<{ id: string; title?: string }>(
-    await fetch("/api/conversations", {
+    await apiFetch("/api/conversations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(context ?? {}),
@@ -39,7 +39,7 @@ export function loadConversation(
 }
 
 export async function interruptConversation(conversationId: string) {
-  const response = await fetch(
+  const response = await apiFetch(
     `/api/conversations/${conversationId}/interrupt`,
     { method: "POST" },
   );
@@ -50,7 +50,7 @@ export async function streamMessage(
   input: SendMessageInput,
   onEvent: (event: ServerEvent) => void,
 ) {
-  const response = await fetch(
+  const response = await apiFetch(
     `/api/conversations/${input.conversationId}/messages`,
     {
       method: "POST",

@@ -1,18 +1,18 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from app.contexts.providers.infrastructure.comfyui import (
+from app.adapters.comfyui.client import (
     _extract_artifacts,
     _flux_image_graph,
     _wan_video_graph,
 )
-from app.contexts.workflows.converter import (
+from app.main import create_app
+from app.modules.workflows.converter import (
     _fill_missing_widgets,
     apply_parameter_schema,
     convert_ui_workflow,
     validate_parameter_schema,
 )
-from app.main import create_app
 from app.shared.errors import ProviderConfigurationError
 from tests.fakes import FakeCodexClient
 

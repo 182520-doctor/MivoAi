@@ -4,7 +4,7 @@ from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Any
 
-from app.contexts.conversations.events import CodexEvent
+from app.modules.conversations.events import CodexEvent
 
 
 class FakeCodexClient:

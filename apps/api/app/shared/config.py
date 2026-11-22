@@ -138,7 +138,34 @@ def _bundled_codex_candidates(project_root: Path) -> tuple[Path, ...]:
 
 def _installed_codex_candidates() -> tuple[Path, ...]:
     if os.name == "nt":
-        return ()
+        candidates: list[Path] = []
+        program_files = Path(
+            os.environ.get("PROGRAMFILES", r"C:\Program Files")
+        )
+        local_app_data = Path(
+            os.environ.get("LOCALAPPDATA", str(Path.home() / "AppData/Local"))
+        )
+        windows_apps = program_files / "WindowsApps"
+        if windows_apps.is_dir():
+            candidates.extend(
+                sorted(
+                    windows_apps.glob(
+                        "OpenAI.Codex_*/app/resources/codex.exe"
+                    ),
+                    reverse=True,
+                )
+            )
+        for candidate in (
+            local_app_data
+            / "Programs"
+            / "OpenAI"
+            / "Codex"
+            / "codex.exe",
+            local_app_data / "Programs" / "Codex" / "codex.exe",
+        ):
+            if candidate.is_file():
+                candidates.append(candidate)
+        return tuple(dict.fromkeys(candidates))
     if os.uname().sysname != "Darwin":
         return ()
     return (

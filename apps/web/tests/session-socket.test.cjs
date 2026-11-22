@@ -1,7 +1,10 @@
 require("./register-typescript.cjs");
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
-const { SessionSocket } = require("../features/chat/api/session-socket.ts");
+const {
+  SessionSocket,
+  sessionSocketUrl,
+} = require("../features/chat/api/session-socket.ts");
 
 class FakeSocket {
   readyState = 0;
@@ -17,6 +20,42 @@ class FakeSocket {
     this.onclose?.();
   }
 }
+
+test("WebSocket defaults to the API port instead of ComfyUI", () => {
+  const previous = process.env.NEXT_PUBLIC_API_WS_URL;
+  delete process.env.NEXT_PUBLIC_API_WS_URL;
+  try {
+    assert.equal(
+      sessionSocketUrl("conversation id", {
+        protocol: "http:",
+        host: "127.0.0.1:3000",
+        hostname: "127.0.0.1",
+      }),
+      "ws://127.0.0.1:8010/api/conversations/conversation%20id/ws",
+    );
+  } finally {
+    if (previous === undefined) delete process.env.NEXT_PUBLIC_API_WS_URL;
+    else process.env.NEXT_PUBLIC_API_WS_URL = previous;
+  }
+});
+
+test("WebSocket honors an explicit backend base URL", () => {
+  const previous = process.env.NEXT_PUBLIC_API_WS_URL;
+  process.env.NEXT_PUBLIC_API_WS_URL = "ws://127.0.0.1:8110";
+  try {
+    assert.equal(
+      sessionSocketUrl("c", {
+        protocol: "http:",
+        host: "127.0.0.1:3000",
+        hostname: "127.0.0.1",
+      }),
+      "ws://127.0.0.1:8110/api/conversations/c/ws",
+    );
+  } finally {
+    if (previous === undefined) delete process.env.NEXT_PUBLIC_API_WS_URL;
+    else process.env.NEXT_PUBLIC_API_WS_URL = previous;
+  }
+});
 
 test("one session connection handles two turns, errors and interrupt", async () => {
   const sockets = [];

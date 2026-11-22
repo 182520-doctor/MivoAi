@@ -2,7 +2,7 @@
 
 import json
 
-from app.contexts.conversations.events import CodexEvent
+from app.modules.conversations.events import CodexEvent
 
 
 def encode_sse(event: CodexEvent) -> str:

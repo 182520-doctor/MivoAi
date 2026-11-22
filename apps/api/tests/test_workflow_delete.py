@@ -1,12 +1,16 @@
 import asyncio
 import json
 
-from app.contexts.media_generation.application import GenerationService
-from app.contexts.media_generation.repository import GenerationTaskRepository
-from app.contexts.workflows.application import _workflow_test_values
-from app.contexts.workflows.domain import ComfyWorkflowRecord
-from app.contexts.workflows.repository import ComfyWorkflowRepository
-from app.infrastructure.persistence.database import Database
+from app.adapters.persistence.database import Database
+from app.adapters.persistence.sqlite.media_generation import (
+    GenerationTaskRepository,
+)
+from app.adapters.persistence.sqlite.workflows import (
+    ComfyWorkflowRepository,
+)
+from app.modules.media_generation.application import GenerationService
+from app.modules.workflows.application import _workflow_test_values
+from app.modules.workflows.domain import ComfyWorkflowRecord
 from app.shared.model_routing import MediaModelRoute
 
 

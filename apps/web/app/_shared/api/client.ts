@@ -1,3 +1,7 @@
+import { apiFetch, apiUrl } from "../../../shared/api/backend";
+
+export { apiFetch, apiUrl };
+
 export async function requireJson<T>(response: Response): Promise<T> {
   if (!response.ok) {
     let detail = "";
@@ -18,7 +22,7 @@ export async function requireJson<T>(response: Response): Promise<T> {
 }
 
 export async function getJson<T>(url: string, signal?: AbortSignal): Promise<T> {
-  return requireJson<T>(await fetch(url, { signal }));
+  return requireJson<T>(await apiFetch(url, { signal }));
 }
 
 export async function putJson<T>(
@@ -26,7 +30,7 @@ export async function putJson<T>(
   body: unknown,
   signal?: AbortSignal,
 ): Promise<T> {
-  return requireJson<T>(await fetch(url, {
+  return requireJson<T>(await apiFetch(url, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),

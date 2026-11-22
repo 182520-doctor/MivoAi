@@ -41,8 +41,8 @@ def available_port(preferred: int) -> int:
 web_port = available_port(3000)
 api_port = available_port(int(os.getenv("ZAOJING_API_PORT", "8010")))
 api_url = f"http://127.0.0.1:{api_port}"
-env["ZAOJING_API_URL"] = api_url
 env["ZAOJING_API_PORT"] = str(api_port)
+env["NEXT_PUBLIC_API_BASE_URL"] = api_url
 web_mode = os.getenv("ZAOJING_WEB_MODE", "start").lower()
 if web_mode not in {"start", "dev"}:
     raise SystemExit("ZAOJING_WEB_MODE must be 'start' or 'dev'")

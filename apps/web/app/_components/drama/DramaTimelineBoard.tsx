@@ -25,6 +25,7 @@ import type {
 } from "../../_features/drama/types";
 import { useDramaAssets } from "../../_features/drama/useDramaAssets";
 import { useDramaProduction } from "../../_features/drama/useDramaProduction";
+import { backendResourceUrl } from "../../../shared/ui/backend-resource";
 
 type DramaTimelineBoardProps = {
   projectId: string;
@@ -839,7 +840,9 @@ export function DramaTimelineBoard({
               <small>合成时会统一画幅、帧率，并为无音频镜头补静音轨。</small>
               {episode.exportManifestId && (
                 <a
-                  href={`/api/drama/projects/episodes/${episode.id}/export-manifests`}
+                  href={backendResourceUrl(
+                    `/api/drama/projects/episodes/${episode.id}/export-manifests`,
+                  )}
                   target="_blank"
                   rel="noreferrer"
                 >
