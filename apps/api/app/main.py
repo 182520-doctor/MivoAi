@@ -25,6 +25,7 @@ from app.modules.drama.ports import (
     DramaProductionMediaPort,
     DramaTimelineRendererPort,
 )
+from app.shared.asyncio_compat import install_windows_connection_reset_filter
 from app.shared.config import Settings
 from app.shared.security import is_origin_allowed
 
@@ -59,6 +60,7 @@ def create_app(
 
     @asynccontextmanager
     async def lifespan(api: FastAPI):
+        install_windows_connection_reset_filter()
         # A startup failure leaves the API available in degraded mode so the UI
         # can display actionable connection status instead of a blank page.
         api.state.recovered_conversation_turns = (

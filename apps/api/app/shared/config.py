@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import os
 import shutil
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -77,10 +78,15 @@ class Settings:
 
 def _resolve_codex_binary(project_root: Path) -> Path:
     configured = os.getenv("CODEX_BINARY")
+    configured_fallback: Path | None = None
     if configured:
         configured_path = Path(configured).expanduser()
         resolved = shutil.which(configured)
-        return Path(resolved) if resolved else configured_path
+        configured_fallback = Path(resolved) if resolved else configured_path
+        if configured_fallback.is_file() and _has_code_mode_host(
+            configured_fallback
+        ):
+            return configured_fallback
 
     bundled_fallback: Path | None = None
     for candidate in _bundled_codex_candidates(project_root):
@@ -109,6 +115,9 @@ def _resolve_codex_binary(project_root: Path) -> Path:
 
     if bundled_fallback:
         return bundled_fallback
+
+    if configured_fallback:
+        return configured_fallback
 
     if path_fallback:
         return path_fallback
@@ -155,6 +164,7 @@ def _installed_codex_candidates() -> tuple[Path, ...]:
                     reverse=True,
                 )
             )
+        candidates.extend(_registered_windows_codex_candidates())
         for candidate in (
             local_app_data
             / "Programs"
@@ -176,5 +186,43 @@ def _installed_codex_candidates() -> tuple[Path, ...]:
 
 def _path_codex_commands() -> tuple[str, ...]:
     if os.name == "nt":
-        return ("codex.cmd", "codex.exe", "codex")
+        return ("codex.exe", "codex.cmd", "codex")
     return ("codex",)
+
+
+def _registered_windows_codex_candidates() -> tuple[Path, ...]:
+    """Resolve the protected WindowsApps install through AppX registration."""
+
+    if os.name != "nt":
+        return ()
+    powershell = shutil.which("powershell.exe")
+    if not powershell:
+        return ()
+    command = (
+        "(Get-AppxPackage -Name OpenAI.Codex | "
+        "Sort-Object Version -Descending | "
+        "Select-Object -First 1 -ExpandProperty InstallLocation)"
+    )
+    try:
+        result = subprocess.run(
+            [powershell, "-NoProfile", "-NonInteractive", "-Command", command],
+            capture_output=True,
+            check=False,
+            encoding="utf-8",
+            errors="replace",
+            timeout=5,
+            creationflags=subprocess.CREATE_NO_WINDOW,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return ()
+    if result.returncode != 0:
+        return ()
+    candidates: list[Path] = []
+    for line in result.stdout.splitlines():
+        install_location = line.strip()
+        if not install_location:
+            continue
+        candidate = Path(install_location) / "app" / "resources" / "codex.exe"
+        if candidate.is_file():
+            candidates.append(candidate)
+    return tuple(dict.fromkeys(candidates))

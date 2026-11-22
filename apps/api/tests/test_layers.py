@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 from app.adapters.persistence.database import Database
 from app.adapters.persistence.sqlite.conversations import ConversationRepository
 from app.shared.config import _resolve_codex_binary
@@ -93,3 +95,76 @@ def test_codex_binary_uses_complete_standard_installation(monkeypatch, tmp_path)
     monkeypatch.setattr("app.shared.config.shutil.which", lambda _: None)
 
     assert _resolve_codex_binary(tmp_path) == installed
+
+
+def test_incomplete_configured_binary_falls_back_to_complete_installation(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    configured = tmp_path / "npm" / "codex.cmd"
+    configured.parent.mkdir(parents=True)
+    configured.touch()
+    installed = tmp_path / "Codex" / "codex.exe"
+    installed.parent.mkdir(parents=True)
+    installed.touch()
+    (installed.parent / "codex-code-mode-host.exe").touch()
+    monkeypatch.setenv("CODEX_BINARY", str(configured))
+    monkeypatch.setattr(
+        "app.shared.config._installed_codex_candidates",
+        lambda: (installed,),
+    )
+    monkeypatch.setattr("app.shared.config.shutil.which", lambda _: None)
+
+    assert _resolve_codex_binary(tmp_path) == installed
+
+
+def test_path_discovery_prefers_binary_with_code_mode_host(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    npm_shim = tmp_path / "npm" / "codex.cmd"
+    npm_shim.parent.mkdir(parents=True)
+    npm_shim.touch()
+    complete = tmp_path / "Codex" / "codex.exe"
+    complete.parent.mkdir(parents=True)
+    complete.touch()
+    (complete.parent / "codex-code-mode-host.exe").touch()
+    monkeypatch.delenv("CODEX_BINARY", raising=False)
+    monkeypatch.setattr("app.shared.config.os.name", "nt")
+    monkeypatch.setattr(
+        "app.shared.config._installed_codex_candidates",
+        lambda: (),
+    )
+    monkeypatch.setattr(
+        "app.shared.config.shutil.which",
+        lambda command: (
+            str(complete) if command == "codex.exe" else str(npm_shim)
+        ),
+    )
+
+    assert _resolve_codex_binary(tmp_path) == complete
+
+
+def test_registered_windows_appx_install_is_discovered(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    installed = tmp_path / "app" / "resources" / "codex.exe"
+    installed.parent.mkdir(parents=True)
+    installed.touch()
+    monkeypatch.setattr("app.shared.config.os.name", "nt")
+    monkeypatch.setattr(
+        "app.shared.config.shutil.which",
+        lambda _: "powershell.exe",
+    )
+    monkeypatch.setattr(
+        "app.shared.config.subprocess.run",
+        lambda *args, **kwargs: SimpleNamespace(
+            returncode=0,
+            stdout=f"{tmp_path}\n",
+        ),
+    )
+
+    from app.shared.config import _registered_windows_codex_candidates
+
+    assert _registered_windows_codex_candidates() == (installed,)
