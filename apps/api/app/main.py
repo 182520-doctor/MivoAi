@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import subprocess
+import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -12,6 +13,9 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.trustedhost import TrustedHostMiddleware
+
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.composition import build_container
 from app.delivery.http.api import register_http_routes
@@ -162,9 +166,12 @@ def _ensure_port_is_available(port: int) -> None:
 
 if __name__ == "__main__":
     _ensure_port_is_available(app_settings.api_port)
+    # Uvicorn's Windows reload supervisor does not start a worker under pythonw.
+    reload_enabled = Path(sys.executable).name.lower() != "pythonw.exe"
     uvicorn.run(
-        app,
+        "app.main:app",
         host="127.0.0.1",
         port=app_settings.api_port,
-        reload=True,
+        reload=reload_enabled,
+        app_dir=str(Path(__file__).resolve().parent.parent),
     )
