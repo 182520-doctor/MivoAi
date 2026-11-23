@@ -1,7 +1,9 @@
-from app.core.config import _resolve_codex_binary
-from app.core.security import is_origin_allowed
-from app.db.database import Database
-from app.db.repositories import ConversationRepository
+from types import SimpleNamespace
+
+from app.adapters.persistence.database import Database
+from app.adapters.persistence.sqlite.conversations import ConversationRepository
+from app.shared.config import _resolve_codex_binary
+from app.shared.security import is_origin_allowed
 
 
 def test_repository_persists_conversation_and_submission(tmp_path) -> None:
@@ -53,7 +55,7 @@ def test_origin_policy_allows_local_browser_and_non_browser_clients() -> None:
 def test_codex_binary_uses_explicit_environment_path(monkeypatch, tmp_path) -> None:
     configured = tmp_path / "custom-codex.exe"
     monkeypatch.setenv("CODEX_BINARY", str(configured))
-    monkeypatch.setattr("app.core.config.shutil.which", lambda _: None)
+    monkeypatch.setattr("app.shared.config.shutil.which", lambda _: None)
 
     assert _resolve_codex_binary(tmp_path) == configured
 
@@ -63,8 +65,8 @@ def test_codex_binary_prefers_bundled_windows_binary(monkeypatch, tmp_path) -> N
     binary.parent.mkdir(parents=True)
     binary.write_text("", encoding="utf-8")
     monkeypatch.delenv("CODEX_BINARY", raising=False)
-    monkeypatch.setattr("app.core.config.os.name", "nt")
-    monkeypatch.setattr("app.core.config.shutil.which", lambda _: None)
+    monkeypatch.setattr("app.shared.config.os.name", "nt")
+    monkeypatch.setattr("app.shared.config.shutil.which", lambda _: None)
 
     assert _resolve_codex_binary(tmp_path) == binary
 
@@ -72,24 +74,97 @@ def test_codex_binary_prefers_bundled_windows_binary(monkeypatch, tmp_path) -> N
 def test_codex_binary_falls_back_to_path_command(monkeypatch, tmp_path) -> None:
     path_binary = tmp_path / "codex.cmd"
     monkeypatch.delenv("CODEX_BINARY", raising=False)
-    monkeypatch.setattr("app.core.config.os.name", "nt")
-    monkeypatch.setattr("app.core.config.shutil.which", lambda _: str(path_binary))
+    monkeypatch.setattr("app.shared.config.os.name", "nt")
+    monkeypatch.setattr("app.shared.config.shutil.which", lambda _: str(path_binary))
 
     assert _resolve_codex_binary(tmp_path) == path_binary
 
 
 def test_codex_binary_uses_complete_standard_installation(monkeypatch, tmp_path) -> None:
-    bundled = tmp_path / "vendor" / "codex" / "bin" / "codex-aarch64-apple-darwin"
+    bundled = tmp_path / "vendor" / "codex" / "bin" / "codex.exe"
     bundled.parent.mkdir(parents=True)
     bundled.touch()
     installed = tmp_path / "ChatGPT.app" / "Contents" / "Resources" / "codex"
     installed.parent.mkdir(parents=True)
     installed.touch()
-    (installed.parent / "codex-code-mode-host").touch()
+    (installed.parent / "codex-code-mode-host.exe").touch()
     monkeypatch.delenv("CODEX_BINARY", raising=False)
     monkeypatch.setattr(
-        "app.core.config._installed_codex_candidates", lambda: (installed,)
+        "app.shared.config._installed_codex_candidates", lambda: (installed,)
     )
-    monkeypatch.setattr("app.core.config.shutil.which", lambda _: None)
+    monkeypatch.setattr("app.shared.config.shutil.which", lambda _: None)
 
     assert _resolve_codex_binary(tmp_path) == installed
+
+
+def test_incomplete_configured_binary_falls_back_to_complete_installation(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    configured = tmp_path / "npm" / "codex.cmd"
+    configured.parent.mkdir(parents=True)
+    configured.touch()
+    installed = tmp_path / "Codex" / "codex.exe"
+    installed.parent.mkdir(parents=True)
+    installed.touch()
+    (installed.parent / "codex-code-mode-host.exe").touch()
+    monkeypatch.setenv("CODEX_BINARY", str(configured))
+    monkeypatch.setattr(
+        "app.shared.config._installed_codex_candidates",
+        lambda: (installed,),
+    )
+    monkeypatch.setattr("app.shared.config.shutil.which", lambda _: None)
+
+    assert _resolve_codex_binary(tmp_path) == installed
+
+
+def test_path_discovery_prefers_binary_with_code_mode_host(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    npm_shim = tmp_path / "npm" / "codex.cmd"
+    npm_shim.parent.mkdir(parents=True)
+    npm_shim.touch()
+    complete = tmp_path / "Codex" / "codex.exe"
+    complete.parent.mkdir(parents=True)
+    complete.touch()
+    (complete.parent / "codex-code-mode-host.exe").touch()
+    monkeypatch.delenv("CODEX_BINARY", raising=False)
+    monkeypatch.setattr("app.shared.config.os.name", "nt")
+    monkeypatch.setattr(
+        "app.shared.config._installed_codex_candidates",
+        lambda: (),
+    )
+    monkeypatch.setattr(
+        "app.shared.config.shutil.which",
+        lambda command: (
+            str(complete) if command == "codex.exe" else str(npm_shim)
+        ),
+    )
+
+    assert _resolve_codex_binary(tmp_path) == complete
+
+
+def test_registered_windows_appx_install_is_discovered(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    installed = tmp_path / "app" / "resources" / "codex.exe"
+    installed.parent.mkdir(parents=True)
+    installed.touch()
+    monkeypatch.setattr("app.shared.config.os.name", "nt")
+    monkeypatch.setattr(
+        "app.shared.config.shutil.which",
+        lambda _: "powershell.exe",
+    )
+    monkeypatch.setattr(
+        "app.shared.config.subprocess.run",
+        lambda *args, **kwargs: SimpleNamespace(
+            returncode=0,
+            stdout=f"{tmp_path}\n",
+        ),
+    )
+
+    from app.shared.config import _registered_windows_codex_candidates
+
+    assert _registered_windows_codex_candidates() == (installed,)

@@ -149,13 +149,13 @@ flowchart TD
 
 | 文件 | 作用 |
 |---|---|
-| `apps/api/app/api/routes/creative_projects.py` | 小说项目创建、查询和 Markdown 文件访问接口 |
-| `apps/api/app/services/creative_project_service.py` | 创建项目工作空间、初始化文件和生成 Agent 工作规则 |
-| `apps/api/app/services/quality_gate_service.py` | 对产物进行基础质量检查 |
-| `apps/api/app/services/codex_app_server.py` | 连接本地 Codex App Server，配置项目 `cwd` 和沙箱写入范围 |
-| `apps/api/app/services/conversation_service.py` | 管理对话、流式事件、项目同步和最终文档链接 |
-| `apps/api/app/db/database.py` | SQLite 表结构与数据库初始化 |
-| `apps/api/app/db/repositories.py` | 项目、工作流、步骤和产物的数据库访问 |
+| `apps/api/app/delivery/http/routes/creative_projects.py` | 小说项目创建、查询和 Markdown 文件访问接口 |
+| `apps/api/app/modules/creative_projects/application.py` | 创建项目工作空间、初始化文件和 Agent 工作规则 |
+| `apps/api/app/modules/creative_projects/domain.py` | 对产物进行基础质量检查 |
+| `apps/api/app/adapters/codex/app_server.py` | 连接本地 Codex App Server，配置项目 `cwd` 和沙箱写入范围 |
+| `apps/api/app/modules/conversations/application.py` | 管理对话、流式事件、项目同步和最终文档链接 |
+| `apps/api/app/adapters/persistence/database.py` | SQLite 表结构与数据库初始化 |
+| `apps/api/app/adapters/persistence/sqlite/creative_projects.py` | 项目、工作流、步骤和产物的数据库访问 |
 | `apps/api/app/core/config.py` | 查找本地 Codex 可执行文件和运行配置 |
 
 ### 前端
@@ -276,4 +276,3 @@ http://127.0.0.1:8000/health
 ## 12. 一句话总结
 
 今天把系统从“一个能和 Codex 聊天的页面”，推进成了“用户输入创意后，自动创建小说项目、绑定独立工作空间、调用本地 Codex、按阶段产出 Markdown 文件，并通过网站链接查看结果”的 Agent 工作流基础版本。
-

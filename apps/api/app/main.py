@@ -1,12 +1,10 @@
-"""FastAPI application factory and dependency composition root.
-
-All concrete infrastructure is assembled here. Route modules receive services,
-services receive repositories and integration clients, and inner layers never
-import FastAPI. This keeps dependencies flowing in one direction.
-"""
+"""FastAPI application factory with bounded-context route registration."""
 
 from __future__ import annotations
 
+import os
+import subprocess
+import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -16,24 +14,20 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from app.api.errors import register_exception_handlers
-from app.api.routes.conversations import create_conversation_router
-from app.api.routes.creative_projects import create_creative_project_router
-from app.api.routes.generations import create_generation_router
-from app.api.routes.providers import create_provider_router
-from app.api.routes.status import create_status_router
-from app.core.config import Settings
-from app.core.interfaces import CodexClient
-from app.core.secrets import SecretBox
-from app.core.security import is_origin_allowed
-from app.db.database import Database
-from app.db.repositories import ConversationRepository, CreativeProjectRepository
-from app.services.codex_app_server import CodexAppServerClient
-from app.services.conversation_service import ConversationService
-from app.services.creative_project_service import CreativeProjectService
-from app.services.generation_service import GenerationService
-from app.services.provider_service import ProviderService
-from app.services.quality_gate_service import QualityGateService
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from app.composition import build_container
+from app.delivery.http.api import register_http_routes
+from app.delivery.http.errors import register_exception_handlers
+from app.modules.conversations.ports import CodexClient
+from app.modules.drama.ports import (
+    DramaProductionMediaPort,
+    DramaTimelineRendererPort,
+)
+from app.shared.asyncio_compat import install_windows_connection_reset_filter
+from app.shared.config import Settings
+from app.shared.security import is_origin_allowed
 
 
 def create_app(
@@ -41,51 +35,64 @@ def create_app(
     *,
     settings: Settings | None = None,
     database_path: Path | None = None,
+    timeline_renderer: DramaTimelineRendererPort | None = None,
+    production_media: DramaProductionMediaPort | None = None,
 ) -> FastAPI:
     """Build an independently testable application with injectable dependencies."""
 
     app_settings = settings or Settings.from_env()
-    codex_client = client or CodexAppServerClient(
-        binary=app_settings.codex_binary,
-        workspace=app_settings.codex_workspace,
-        protocol_log=app_settings.protocol_log_path,
-        protocol_logging_enabled=app_settings.protocol_logging_enabled,
+    container = build_container(
+        app_settings,
+        codex_client=client,
+        database_path=database_path,
+        timeline_renderer=timeline_renderer,
+        production_media=production_media,
     )
-    database = Database(database_path or app_settings.database_path)
-    repository = ConversationRepository(database)
-    creative_repository = CreativeProjectRepository(database)
-    provider_service = ProviderService(database, SecretBox(app_settings.secret_key_path))
-    conversation_service = ConversationService(
-        repository,
-        codex_client,
-        provider_service,
-        creative_repository=creative_repository,
-    )
-    generation_service = GenerationService(repository, provider_service, app_settings.asset_dir)
-    creative_project_service = CreativeProjectService(
-        creative_repository, app_settings.creative_workspace_dir
-    )
+    codex_client = container.codex_client
+    conversation_service = container.conversation_service
+    provider_service = container.provider_service
+    generation_service = container.generation_service
+    media_processing_service = container.media_processing_service
+    asset_service = container.asset_service
+    workflow_service = container.workflow_service
+    drama_service = container.drama_service
+    creative_project_service = container.creative_project_service
 
     @asynccontextmanager
     async def lifespan(api: FastAPI):
+        install_windows_connection_reset_filter()
         # A startup failure leaves the API available in degraded mode so the UI
         # can display actionable connection status instead of a blank page.
+        api.state.recovered_conversation_turns = (
+            conversation_service.recover_interrupted()
+        )
         startup_error: str | None = None
         try:
             await codex_client.start()
         except Exception as exc:  # noqa: BLE001 - health endpoint exposes the failure
             startup_error = str(exc)
         api.state.startup_error = startup_error
+        api.state.resumed_generation_tasks = (
+            await generation_service.resume_interrupted()
+        )
+        api.state.resumed_drama_runs = (
+            await drama_service.resume_production_runs()
+        )
         yield
         await codex_client.stop()
-        database.close()
+        container.database.close()
 
-    api = FastAPI(title="造境 Codex Gateway", version="0.3.0", lifespan=lifespan)
+    api = FastAPI(title="造境 Codex Gateway", version="0.4.0", lifespan=lifespan)
     api.state.codex = codex_client
     api.state.conversation_service = conversation_service
     api.state.provider_service = provider_service
     api.state.generation_service = generation_service
+    api.state.media_processing_service = media_processing_service
+    api.state.asset_service = asset_service
+    api.state.workflow_service = workflow_service
+    api.state.drama_service = drama_service
     api.state.creative_project_service = creative_project_service
+    api.state.container = container
     api.add_middleware(
         TrustedHostMiddleware, allowed_hosts=list(app_settings.allowed_hosts)
     )
@@ -106,19 +113,67 @@ def create_app(
         allow_headers=["*"],
     )
     register_exception_handlers(api)
-    api.include_router(create_status_router(codex_client))
-    api.include_router(
-        create_conversation_router(conversation_service, app_settings.allowed_origins)
-    )
-    api.include_router(create_provider_router(provider_service))
-    api.include_router(create_generation_router(generation_service, repository))
-    api.include_router(
-        create_creative_project_router(creative_project_service, QualityGateService())
+    register_http_routes(
+        api,
+        container,
+        allowed_origins=app_settings.allowed_origins,
     )
     return api
 
 
-app = create_app()
+app_settings = Settings.from_env()
+app = create_app(settings=app_settings)
+
+
+def _parse_listening_ports(output: str) -> set[int]:
+    ports: set[int] = set()
+    for line in output.splitlines():
+        parts = line.split()
+        if len(parts) < 4:
+            continue
+        if parts[-2].upper() not in {"LISTEN", "LISTENING", "侦听"}:
+            continue
+        address = parts[1] if parts[0] == "TCP" else parts[3]
+        if ":" not in address:
+            continue
+        try:
+            ports.add(int(address.rsplit(":", 1)[1]))
+        except ValueError:
+            continue
+    return ports
+
+
+def _listening_ports() -> set[int]:
+    command = ["netstat", "-ano"] if os.name == "nt" else ["ss", "-lnt"]
+    try:
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            check=False,
+            encoding="utf-8",
+            errors="replace",
+            timeout=5,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return set()
+    return _parse_listening_ports(result.stdout) if result.returncode == 0 else set()
+
+
+def _ensure_port_is_available(port: int) -> None:
+    if port in _listening_ports():
+        raise SystemExit(
+            f"Backend port {port} is already in use. Stop the old process first."
+        )
+
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    _ensure_port_is_available(app_settings.api_port)
+    # Uvicorn's Windows reload supervisor does not start a worker under pythonw.
+    reload_enabled = Path(sys.executable).name.lower() != "pythonw.exe"
+    uvicorn.run(
+        "app.main:app",
+        host="127.0.0.1",
+        port=app_settings.api_port,
+        reload=reload_enabled,
+        app_dir=str(Path(__file__).resolve().parent.parent),
+    )

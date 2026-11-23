@@ -1,9 +1,10 @@
 """Reusable integration fakes implementing the CodexClient contract."""
 
 from collections.abc import AsyncIterator
+from pathlib import Path
 from typing import Any
 
-from app.models.codex import CodexEvent
+from app.modules.conversations.events import CodexEvent
 
 
 class FakeCodexClient:
@@ -16,7 +17,13 @@ class FakeCodexClient:
     async def stop(self) -> None:
         self.running = False
 
-    async def create_thread(self, workspace=None) -> str:
+    async def create_thread(
+        self,
+        workspace: Path | None = None,
+        *,
+        cwd: Path | None = None,
+        shared_roots: list[Path] | None = None,
+    ) -> str:
         return "test-thread"
 
     async def request(
@@ -28,7 +35,13 @@ class FakeCodexClient:
         return {"data": [], "nextCursor": None}
 
     async def chat(
-        self, message: str, thread_id: str | None, workspace=None
+        self,
+        message: str,
+        thread_id: str | None,
+        workspace: Path | None = None,
+        *,
+        cwd: Path | None = None,
+        shared_roots: list[Path] | None = None,
     ) -> AsyncIterator[CodexEvent]:
         yield {
             "type": "meta",

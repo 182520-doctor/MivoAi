@@ -1,8 +1,10 @@
 from pathlib import Path
 
-from app.db.database import Database
-from app.db.repositories import CreativeProjectRepository
-from app.services.creative_project_service import CreativeProjectService
+from app.adapters.persistence.database import Database
+from app.adapters.persistence.sqlite.creative_projects import (
+    CreativeProjectRepository,
+)
+from app.modules.creative_projects.application import CreativeProjectService
 
 
 def test_create_novel_project_initializes_workspace(tmp_path: Path):

@@ -12,9 +12,12 @@ npm install
 npm run dev
 ```
 
-前端默认 `http://localhost:3000`，API 默认 `http://127.0.0.1:8000`。
-HTTP `/api/*` 通过 Next.js rewrite 转发，聊天通过浏览器直接连接后端 WebSocket。
-`NEXT_PUBLIC_API_WS_URL` 可覆盖连接基址；HTTPS 默认同域 `wss://`，由反向代理转发 Upgrade。
+前端默认 `http://127.0.0.1:3000`，MivoAi API 默认 `http://127.0.0.1:8010`。
+`8000` 保留给 ComfyUI。浏览器中的 HTTP 和 WebSocket 都直接访问 FastAPI；
+Next.js 不代理 `/api/*`。
+后端地址变化时设置 `NEXT_PUBLIC_API_BASE_URL`。推荐使用仓库根目录的
+`scripts/start_local.py`，它会自动注入当前 API 地址。
+`NEXT_PUBLIC_API_WS_URL` 仅用于特殊部署时单独覆盖 WebSocket 基址。
 公开变量在构建时内联，修改后需要重启开发服务或重新构建。后端 Origin 白名单需包含前端来源。
 
 ## 目录与依赖

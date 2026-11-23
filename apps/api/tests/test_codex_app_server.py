@@ -3,16 +3,20 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from app.services.codex_app_server import (
+from app.adapters.codex.app_server import (
     CodexAppServerClient,
     _subprocess_startup_options,
 )
 
 
 def test_subprocess_startup_hides_windows_console(monkeypatch) -> None:
-    monkeypatch.setattr("app.services.codex_app_server.os.name", "nt")
     monkeypatch.setattr(
-        "app.services.codex_app_server.subprocess.CREATE_NO_WINDOW",
+        "app.adapters.codex.app_server.os.name",
+        "nt",
+    )
+    monkeypatch.setattr(
+        "app.adapters.codex.app_server."
+        "subprocess.CREATE_NO_WINDOW",
         0x08000000,
         raising=False,
     )
@@ -21,7 +25,10 @@ def test_subprocess_startup_hides_windows_console(monkeypatch) -> None:
 
 
 def test_subprocess_startup_options_are_empty_off_windows(monkeypatch) -> None:
-    monkeypatch.setattr("app.services.codex_app_server.os.name", "posix")
+    monkeypatch.setattr(
+        "app.adapters.codex.app_server.os.name",
+        "posix",
+    )
 
     assert _subprocess_startup_options() == {}
 
@@ -40,14 +47,18 @@ def test_start_reports_provider_authentication_requirements(
 ) -> None:
     binary = tmp_path / "codex.exe"
     binary.touch()
-    (tmp_path / "codex-code-mode-host").touch()
+    (tmp_path / "codex-code-mode-host.exe").touch()
     client = CodexAppServerClient(
         binary, tmp_path / "workspace", tmp_path / "protocol.log", protocol_logging_enabled=False
     )
     process = MagicMock(returncode=None)
     process.wait = AsyncMock()
     spawn = AsyncMock(return_value=process)
-    monkeypatch.setattr("app.services.codex_app_server.asyncio.create_subprocess_exec", spawn)
+    monkeypatch.setattr(
+        "app.adapters.codex.app_server."
+        "asyncio.create_subprocess_exec",
+        spawn,
+    )
     monkeypatch.setattr(client, "_read_stdout", AsyncMock())
     monkeypatch.setattr(client, "_read_stderr", AsyncMock())
     monkeypatch.setattr(client, "notify", AsyncMock())
@@ -75,7 +86,7 @@ def test_start_reports_provider_authentication_requirements(
     asyncio.run(run())
 
 
-def test_create_thread_is_ephemeral(monkeypatch, tmp_path) -> None:
+def test_create_thread_uses_project_workspace(monkeypatch, tmp_path) -> None:
     client = CodexAppServerClient(
         tmp_path / "codex",
         tmp_path / "workspace",
@@ -89,11 +100,11 @@ def test_create_thread_is_ephemeral(monkeypatch, tmp_path) -> None:
 
     assert thread_id == "web-thread"
     params = request.await_args.args[1]
-    assert params["ephemeral"] is True
+    assert params["ephemeral"] is False
     assert params["cwd"] == str(tmp_path / "project")
 
 
-def test_chat_replaces_thread_not_loaded_after_restart(monkeypatch, tmp_path) -> None:
+def test_chat_resumes_thread_not_loaded_after_restart(monkeypatch, tmp_path) -> None:
     client = CodexAppServerClient(
         tmp_path / "codex",
         tmp_path / "workspace",
@@ -101,20 +112,27 @@ def test_chat_replaces_thread_not_loaded_after_restart(monkeypatch, tmp_path) ->
         protocol_logging_enabled=False,
     )
     monkeypatch.setattr(client, "start", AsyncMock())
-    monkeypatch.setattr(client, "create_thread", AsyncMock(return_value="fresh-thread"))
-    request = AsyncMock(return_value={"turn": {"id": "turn-1"}})
+    create_thread = AsyncMock(return_value="fresh-thread")
+    monkeypatch.setattr(client, "create_thread", create_thread)
+    request = AsyncMock(
+        side_effect=[
+            {"thread": {"id": "stale-thread"}},
+            {"turn": {"id": "turn-1"}},
+        ]
+    )
     monkeypatch.setattr(client, "request", request)
 
     async def run() -> None:
         iterator = client.chat("hello", "stale-thread", tmp_path / "project")
         event = await anext(iterator)
-        assert event["threadId"] == "fresh-thread"
+        assert event["threadId"] == "stale-thread"
         await iterator.aclose()
 
     asyncio.run(run())
-    client.create_thread.assert_awaited_once_with(tmp_path / "project")
-    assert request.await_args.args[0] == "turn/start"
-    params = request.await_args.args[1]
+    create_thread.assert_not_awaited()
+    assert request.await_args_list[0].args[0] == "thread/resume"
+    assert request.await_args_list[1].args[0] == "turn/start"
+    params = request.await_args_list[1].args[1]
     assert params["cwd"] == str((tmp_path / "project").resolve())
     assert params["sandboxPolicy"] == {
         "type": "workspaceWrite",

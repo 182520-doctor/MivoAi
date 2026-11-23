@@ -1,4 +1,5 @@
 import type { ConnectionStatus, MessagePayload, ServerEvent } from "../types";
+import { apiUrl } from "../../../shared/api/backend";
 
 type PendingTurn = {
   id: string;
@@ -15,7 +16,7 @@ export function sessionSocketUrl(
     process.env.NEXT_PUBLIC_API_WS_URL ||
     (location.protocol === "https:"
       ? `wss://${location.host}`
-      : `ws://${location.hostname}:8000`);
+      : apiUrl("").replace(/^http/, "ws"));
   const url = new URL(base);
   if (!["ws:", "wss:"].includes(url.protocol))
     throw new Error("WebSocket 地址必须使用 ws 或 wss");

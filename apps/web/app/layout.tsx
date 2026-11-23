@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./theme.css";
+import { StudioFrame } from "./_components/shell/StudioFrame";
 
 export const metadata: Metadata = {
   title: "造境 - Codex 创意 Agent",
@@ -9,7 +11,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="zh-CN">
-      <body>{children}</body>
+      <body>
+        <StudioFrame>{children}</StudioFrame>
+      </body>
     </html>
   );
 }
