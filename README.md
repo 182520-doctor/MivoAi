@@ -1,77 +1,75 @@
-# 造境 Agent MVP
+# MivoAi
 
-一个受即梦工作流启发的本地 Agent 网站最小版本。浏览器通过 Next.js 同源接口访问 FastAPI，FastAPI 再以 JSON-RPC 连接本机的 Codex App Server。模型不在本机运行；App Server 使用本机现有的 Codex 登录状态调用模型。
+MivoAi 是一个由 Agent 驱动的本地多模态内容创作平台，支持文本、图片、视频等内容的智能创作与工作流编排。
 
-## 已实现
+浏览器直接连接 FastAPI；MivoAi API 是唯一的应用入口，并通过端口适配本地 Codex App Server、ComfyUI、模型供应商、FFmpeg、SQLite 和工作区文件。
 
-- 新建和切换对话
-- 流式显示 Agent 回复
-- 折叠展示 Codex 思考/推理过程和 reasoning token
-- Markdown/GFM 渲染，支持表格、列表、代码块
-- 多轮上下文与服务重启后的会话恢复
-- 中止正在生成的回复
-- SQLite 保存业务会话、回合、消息详情与提交记录；页面历史以 SQLite 为准
-- Codex App Server 运行、登录状态检查
-- 桌面端和移动端自适应界面
-- 前端只访问同源 `/api`，不暴露 App Server
-- 火山方舟文本/多模态 Chat API 接入，支持用户在页面配置自己的 API Key
-- Provider/Model 目录、模型偏好、凭证密文和 `generation_tasks` 请求审计
-- 独立模型中心：能力筛选、默认模型切换、凭证配置和真实连接测试
-- 本地 ComfyUI 接入：Flux 文生图和 Wan 文生视频，任务、进度与素材闭环
-- ComfyUI 工作流扫描、导入、API 图转换、真实测试和模型启用管理
+## 核心能力
 
-## 架构
+- Agent 对话：流式回复、推理过程、上下文恢复和回合中断
+- 创作工作区：小说、剧本、分集、场次、镜头与生产产物
+- 多模型供应商：Provider/Model目录、凭证管理和能力路由
+- 媒体生成：ComfyUI 工作流发现、导入、参数映射、图片与视频任务
+- 素材管理：上传、生成结果登记、本地内容读取和文件绑定
+- 媒体处理：FFmpeg、TTS、字幕、转码与确定性处理任务
+- Web 工作台：桌面端与移动端适配的流式创作界面
+
+## 系统架构
 
 ```text
 Browser
-  -> Next.js (127.0.0.1:3000)
-  -> FastAPI HTTP / WebSocket (127.0.0.1:8010)
-  -> Codex App Server (stdio / JSON-RPC)
-  -> Codex account and remote model
+  -> FastAPI HTTP / WebSocket (:8010)
+  -> 应用模块与端口
+  -> Codex / ComfyUI / 模型供应商 / FFmpeg / SQLite / 工作区文件
+
+ComfyUI (:8000)
+Next.js (:3000，仅承载浏览器界面，不代理 /api/*)
 ```
 
-关键目录：
+这是一个本地模块化单体，不拆分为微服务。后端采用领域模块优先的 DDD 分层：
 
-- `apps/web/app/_features`：前端功能域、API 客户端、SSE 解析和状态 Hook
-- `apps/web/app/_components`：工作台、会话、消息和设置等展示组件
-- `apps/web/app/_shared`：前端通用 HTTP 客户端
-- `apps/web/app/page.tsx`：仅作为路由入口，渲染客户端工作台
-- `apps/api/app/modules`：按限界上下文拆分的领域与应用用例
-  - `conversations`：会话、Agent 运行时和流式回复
-  - `creative_projects`：小说/剧本工作区、产物与质量检查
-  - `drama`：分集、场次、镜头、审核与生产运行
-  - `providers`：供应商目录、凭证、文本路由和媒体 Adapter
-  - `workflows`：ComfyUI 工作流导入、参数映射与模型注册
-  - `media_generation`：统一图片/视频生成任务
-  - `assets`：素材登记、下载和内容访问
-  - `media_processing`：FFmpeg、TTS、字幕与确定性媒体处理
-- `apps/api/app/delivery/http`：统一 HTTP 路由、Schema 和错误映射入口
-- `apps/api/app/delivery/agent`：统一 Agent 工具适配器
-- `apps/api/app/adapters`：SQLite、Codex、ComfyUI、媒体和工作区适配器
-- `apps/api/app/shared`：配置、错误、SSE、安全、凭证加密等共享内核
-- `apps/api/app/composition.py`：依赖装配入口，只有这里绑定具体实现
-- `apps/api/app/main.py`：FastAPI 应用工厂和路由注册
-- `vendor/codex`：固定版本的官方 Codex 可执行文件、压缩包和协议 schema
-- `scripts`：启动和真实链路验收脚本
+```text
+apps/api/app/
+├── modules/          # 领域、应用用例与端口
+├── delivery/         # HTTP 路由、Agent 工具适配器
+├── adapters/         # SQLite、Codex、ComfyUI、Provider、媒体、工作区
+├── shared/           # 跨模块基础设施与公共类型
+├── composition.py    # 依赖装配
+└── main.py           # FastAPI 应用入口
+```
 
-完整的 DDD 模块边界、依赖规则和调用流程见
-[`docs/backend-architecture.md`](docs/backend-architecture.md)。
-强制工程规范以根目录 [`AGENTS.md`](AGENTS.md) 为准。
+主要限界上下文：
 
-前端功能域、组件和状态边界见
-[`docs/frontend-architecture.md`](docs/frontend-architecture.md)。
+- `conversations`：对话、Codex线程、回合、消息和流
+- `creative_projects`：创作工作区、文档工作流、产物与质量门禁
+- `drama`：剧集、场次、镜头、生产运行和审核决策
+- `providers`：供应商目录、凭证、模型能力与路由
+- `workflows`：ComfyUI工作流发现、导入和参数映射
+- `media_generation`：持久化生成任务、重试、取消与结果绑定
+- `assets`：素材与本地内容元数据
+- `media_processing`：FFmpeg、TTS、字幕和确定性媒体处理
 
-数据库表结构说明见 [`docs/sqlite-schema.md`](docs/sqlite-schema.md)。
+完整约束以 [`AGENTS.md`](AGENTS.md) 为准。
 
-火山引擎本次接入记录见 [`docs/volcengine-integration-report.md`](docs/volcengine-integration-report.md)。
+## 仓库结构
 
-多模型网关设计见 [`docs/multi-model-gateway-design.md`](docs/multi-model-gateway-design.md)。
+```text
+apps/
+├── api/              # FastAPI、领域模块与基础设施适配器
+└── web/              # Next.js App Router 与 React 工作台
+ docs/                # 架构、协议、数据库与集成文档
+ scripts/             # 本地启动与真实链路检查
+ vendor/codex/        # 本地 Codex 运行时与协议资源
+```
 
-ComfyUI 工作流模型管理见
-[`docs/comfyui-workflow-management.md`](docs/comfyui-workflow-management.md)。
+## 环境要求
 
-Codex + ComfyUI 多模态工作台与短剧工作台的 DDD 技术方案见
-[`docs/agent-media-studio-ddd-design.md`](docs/agent-media-studio-ddd-design.md)。
+- Python 3.12+
+- `uv`
+- Node.js 和包管理工具
+- 可选：本地 ComfyUI（默认地址 `http://127.0.0.1:8000`）
+- 可选：已登录或已配置的 Codex App Server
+- 可选：FFmpeg
 
 ## 一键启动
 
@@ -81,13 +79,15 @@ Codex + ComfyUI 多模态工作台与短剧工作台的 DDD 技术方案见
 uv run python scripts/start_local.py
 ```
 
-启动脚本默认使用 3000/8010；端口被占用时会自动选择下一个可用端口，并同步 Next.js
-代理地址。看到 `Website: http://127.0.0.1:<port>` 后打开对应地址。启动窗口需保持打开，
-按 `Ctrl+C` 会同时停止前后端。Windows 上的构建、API 与 Web 子进程使用隐藏窗口启动，
-不会再额外弹出 CMD 控制台。
+启动脚本默认优先使用 `3000`（Web）和 `8010`（API）；端口占用时会自动选择可用端口，并同步前端 API 地址。
 
-一键启动默认使用生产构建并通过 `next start` 运行。需要前端热更新时，设置
-`ZAOJING_WEB_MODE=dev`，并确保同一项目没有其他 `next dev` 实例。
+输出中的 `Website: http://127.0.0.1:<port>` 为浏览器入口。保持启动窗口打开，按 `Ctrl+C` 可同时停止前后端。
+
+要使用前端热更新：
+
+```bash
+ZAOJING_WEB_MODE=dev uv run python scripts/start_local.py
+```
 
 ## 手动启动
 
@@ -102,54 +102,59 @@ uv run uvicorn app.main:app --host 127.0.0.1 --port 8010
 
 ```bash
 cd apps/web
-pnpm dev --hostname 127.0.0.1 --port 3000
+npm run dev -- --hostname 127.0.0.1 --port 3000
 ```
 
-ComfyUI 使用 `8000`，MivoAi API 使用 `8010`。前端 HTTP 和 WebSocket
-都直接访问 FastAPI，不经过 Next.js `/api` 代理。如果手动修改 API 端口，
-需为前端设置对应的 `NEXT_PUBLIC_API_BASE_URL`。推荐使用根目录的一键启动脚本。
+浏览器中的 HTTP 与 WebSocket 都直接访问 `http://127.0.0.1:8010`，不经过 Next.js `/api` 代理。
+
+## 常用配置
+
+| 环境变量 | 用途 |
+| --- | --- |
+| `NEXT_PUBLIC_API_BASE_URL` | 前端 HTTP API 地址 |
+| `NEXT_PUBLIC_API_WS_URL` | 前端 WebSocket 基址（仅特殊部署需要） |
+| `CODEX_BINARY` | Codex App Server 可执行文件路径 |
+| `CODEX_WORKSPACE` | Codex 工作目录 |
+| `DATABASE_PATH` | SQLite 数据库路径 |
+| `COMFYUI_BASE_URL` | ComfyUI 地址，默认为 `http://127.0.0.1:8000` |
+| `ZAOJING_ASSET_DIR` | 本地素材目录 |
+| `ZAOJING_SECRET_KEY_PATH` | 凭证加密密钥文件 |
 
 ## 验证
 
+后端：
+
 ```bash
-cd /Users/hwx/Documents/Codex/2026-09-04/an/work/ai-dev-starter/apps/api
+cd apps/api
 uv run pytest -q
 uv run ruff check .
-
-cd /Users/hwx/Documents/Codex/2026-09-04/an/work/ai-dev-starter/apps/web
-pnpm typecheck
-pnpm build
 ```
 
-真实 Codex 链路需先启动后端：
+前端：
 
 ```bash
-cd /Users/hwx/Documents/Codex/2026-09-04/an/work/ai-dev-starter
-apps/api/.venv/bin/python scripts/check_chat.py
-apps/api/.venv/bin/python scripts/check_interrupt.py
+cd apps/web
+npm run typecheck
+npm run check:architecture
+npm test
+npm run build
 ```
 
-## 查看 Codex 交互日志
-
-一键启动窗口会实时打印 Codex JSON-RPC 协议日志：
-
-```text
-[Codex gateway -> app-server] ...
-[Codex app-server -> gateway] ...
-```
-
-日志也会持续保存在 `runtime/logs/codex-protocol.log`。
-
-另开终端可实时查看：
+启动后端后可运行真实 Codex 链路检查：
 
 ```bash
-tail -f runtime/logs/codex-protocol.log
+uv run python scripts/check_chat.py
+uv run python scripts/check_interrupt.py
 ```
 
-设置 `CODEX_PROTOCOL_LOG=0` 后启动可关闭协议日志。账号邮箱、token、密码和密钥字段会在输出前自动脱敏。
+## 文档索引
 
-## 当前边界
-
-当前已接通本地 ComfyUI 的 Flux 文生图和 Wan 文生视频。图片/视频参考素材上传、
-图生图、图生视频、音频生成、工作流版本管理和短剧领域模块仍属于后续阶段。
-Codex Agent 对话需要有效的本地 Codex 登录；ComfyUI 媒体生成不依赖 Codex 登录。
+- [`AGENTS.md`](AGENTS.md)：规范工程契约
+- [`docs/backend-architecture.md`](docs/backend-architecture.md)：后端架构与依赖边界
+- [`docs/frontend-architecture.md`](docs/frontend-architecture.md)：前端功能与依赖边界
+- [`docs/sqlite-schema.md`](docs/sqlite-schema.md)：数据库结构
+- [`docs/multi-model-gateway-design.md`](docs/multi-model-gateway-design.md)：多模型网关设计
+- [`docs/creative-agent-workflow-design-v2.md`](docs/creative-agent-workflow-design-v2.md)：创作 Agent 工作流设计
+- [`docs/codex-app-server.md`](docs/codex-app-server.md)：Codex协议集成说明
+- [`apps/api/README.md`](apps/api/README.md)：API启动、接口与排查
+- [`apps/web/README.md`](apps/web/README.md)：Web端开发与会话协议
