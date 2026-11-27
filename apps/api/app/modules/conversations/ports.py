@@ -49,6 +49,8 @@ class CodexClient(Protocol):
 
     def status(self) -> dict[str, Any]: ...
 
+    def runtime_signature(self) -> str: ...
+
 
 class ConversationModelGateway(Protocol):
     """Cross-context port for text model resolution and external streaming."""
@@ -146,6 +148,7 @@ class ConversationRepositoryPort(Protocol):
         thread_id: str,
         title: str,
         tool_runtime_version: int = 0,
+        runtime_signature: str = "",
     ) -> None: ...
 
     def set_workspace(self, conversation_id: str, workspace_path: str) -> None: ...

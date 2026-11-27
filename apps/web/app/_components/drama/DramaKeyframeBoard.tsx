@@ -181,7 +181,11 @@ export function DramaKeyframeBoard({
         </div>
       </header>
 
-      {!shots.length ? (
+      {production.loading || library.loading ? (
+        <div className="drama-stage-loading">
+          正在读取本集镜头与资产生成契约…
+        </div>
+      ) : !shots.length ? (
         <div className="drama-keyframe-empty">
           <Clapperboard size={32} />
           <strong>还没有镜头</strong>

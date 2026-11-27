@@ -148,9 +148,41 @@ def test_recent_conversations_are_threads_not_turns(tmp_path) -> None:
 
     assert all(item["id"] != empty_id for item in conversations)
     assert len(conversations) == 1
-    assert conversations[0]["id"] == conversation_id
     assert conversations[0]["threadId"] == "test-thread"
     assert conversations[0]["messageCount"] == 4
+
+
+def test_model_runtime_change_creates_a_new_codex_thread(tmp_path) -> None:
+    codex = FakeCodexClient()
+    app = create_app(codex, database_path=tmp_path / "model-switch.db")
+    with TestClient(app) as client:
+        conversation_id = client.post("/api/conversations").json()["id"]
+        first = client.post(
+            f"/api/conversations/{conversation_id}/messages",
+            json={"message": "第一模型", "clientMessageId": "model-1"},
+        )
+        assert first.status_code == 200
+        first_thread = client.get("/api/conversations").json()[0]["threadId"]
+
+        codex.runtime_signature_value = "switched-runtime"
+        second = client.post(
+            f"/api/conversations/{conversation_id}/messages",
+            json={"message": "第二模型", "clientMessageId": "model-2"},
+        )
+        assert second.status_code == 200
+        conversations = client.get("/api/conversations").json()
+        history = client.get(
+            f"/api/conversations/{conversation_id}/messages"
+        ).json()
+
+    assert first_thread == "test-thread"
+    assert codex.threads_created == 2
+    assert conversations[0]["id"] == conversation_id
+    assert conversations[0]["threadId"] == "test-thread-2"
+    assert [message["content"] for message in history["messages"] if message["role"] == "user"] == [
+        "第一模型",
+        "第二模型",
+    ]
 
 
 def test_drama_context_produces_clean_conversation_title() -> None:

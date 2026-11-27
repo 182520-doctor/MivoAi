@@ -254,7 +254,11 @@ export function DramaTimelineBoard({
         </div>
       </header>
 
-      {!production.episodes.length ? (
+      {production.loading ? (
+        <div className="drama-stage-loading">
+          正在读取分集时间线与成片状态…
+        </div>
+      ) : !production.episodes.length ? (
         <div className="drama-timeline-empty">
           <Film size={32} />
           <strong>还没有分集</strong>
@@ -403,7 +407,9 @@ export function DramaTimelineBoard({
                 </div>
                 {production.audit.issues.slice(0, 5).map((issue, index) => (
                   <article
-                    key={`${issue.code}-${issue.shotId ?? issue.entityId ?? index}`}
+                    key={`${issue.code}-${
+                      issue.shotId ?? issue.entityId ?? "episode"
+                    }-${index}`}
                     className={issue.severity}
                   >
                     {issue.severity === "info" ? (

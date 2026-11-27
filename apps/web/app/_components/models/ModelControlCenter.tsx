@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  CheckCircle2,
-  Cpu,
-  Search,
-  Sparkles,
-  Wifi,
-} from "lucide-react";
+import { CheckCircle2, Cpu, Search, Sparkles, Wifi } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useModelSettings } from "../../_features/models/useModelSettings";
 import { ModelsSectionNav } from "./ModelsSectionNav";
@@ -43,12 +37,7 @@ export function ModelControlCenter() {
         const query = search.trim().toLowerCase();
         if (
           query &&
-          ![
-            model.name,
-            model.id,
-            model.modelKey,
-            model.providerName,
-          ]
+          ![model.name, model.id, model.modelKey, model.providerName]
             .join(" ")
             .toLowerCase()
             .includes(query)
@@ -84,7 +73,19 @@ export function ModelControlCenter() {
 
   return (
     <main className="workbench-page model-page">
-      <h1 className="visually-hidden">模型中心</h1>
+      <header className="page-heading compact workbench-page-heading">
+        <div>
+          <span className="eyebrow">能力目录</span>
+          <h1>模型中心</h1>
+          <p>
+            按文本、图片、视频和音频查看可用模型，并为每一类创作指定默认执行模型。
+          </p>
+        </div>
+        <div className="heading-status">
+          <span className="status-chip">{settings.models.length} 个模型</span>
+          <span className="status-chip ready">{readyCount} 个已就绪</span>
+        </div>
+      </header>
       <ModelsSectionNav active="catalog" />
 
       <section className="model-summary-grid">
@@ -135,105 +136,105 @@ export function ModelControlCenter() {
           </label>
         </div>
 
-          <div className="model-card-grid">
-            {visibleModels.map((model) => {
-              const configured =
-                model.configured || model.providerId === "codex_local";
-              const defaultKind = model.capabilities.includes("text")
-                ? "text"
-                : model.capabilities.includes("image_generation")
-                  ? "image"
-                  : model.capabilities.includes("video_generation")
-                    ? "video"
-                    : null;
-              const isDefault =
-                defaultKind === "text"
-                  ? settings.selectedModelId === model.id
-                  : defaultKind === "image"
-                    ? settings.preferences?.defaultImageModelId === model.id
-                    : defaultKind === "video"
-                      ? settings.preferences?.defaultVideoModelId === model.id
-                      : false;
-              return (
-                <article
-                  className={`model-card provider-${model.providerId}`}
-                  key={model.id}
-                >
-                  <div className="model-card-head">
-                    <span className="model-provider-icon">
-                      <Cpu size={18} />
+        <div className="model-card-grid">
+          {visibleModels.map((model) => {
+            const configured =
+              model.configured || model.providerId === "codex_local";
+            const defaultKind = model.capabilities.includes("text")
+              ? "text"
+              : model.capabilities.includes("image_generation")
+                ? "image"
+                : model.capabilities.includes("video_generation")
+                  ? "video"
+                  : null;
+            const isDefault =
+              defaultKind === "text"
+                ? settings.selectedModelId === model.id
+                : defaultKind === "image"
+                  ? settings.preferences?.defaultImageModelId === model.id
+                  : defaultKind === "video"
+                    ? settings.preferences?.defaultVideoModelId === model.id
+                    : false;
+            return (
+              <article
+                className={`model-card provider-${model.providerId}`}
+                key={model.id}
+              >
+                <div className="model-card-head">
+                  <span className="model-provider-icon">
+                    <Cpu size={18} />
+                  </span>
+                  <div>
+                    <span>{model.providerName}</span>
+                    <h2>{model.name}</h2>
+                  </div>
+                  <span
+                    className={`model-status ${
+                      configured && model.integrationStatus === "ready"
+                        ? "ready"
+                        : ""
+                    }`}
+                  >
+                    {model.integrationStatus === "ready"
+                      ? configured
+                        ? "已配置"
+                        : "缺凭证"
+                      : "待接入"}
+                  </span>
+                </div>
+                <code>{model.id}</code>
+                {model.kind === "comfy_workflow" && (
+                  <span className="workflow-model-source">
+                    ComfyUI 工作流模型
+                  </span>
+                )}
+                <div className="model-capabilities">
+                  {model.capabilities.map((capability) => (
+                    <span key={capability}>
+                      {capabilityLabels[capability] ?? capability}
                     </span>
-                    <div>
-                      <span>{model.providerName}</span>
-                      <h2>{model.name}</h2>
-                    </div>
-                    <span
-                      className={`model-status ${
-                        configured && model.integrationStatus === "ready"
-                          ? "ready"
-                          : ""
-                      }`}
-                    >
-                      {model.integrationStatus === "ready"
-                        ? configured
-                          ? "已配置"
-                          : "缺凭证"
-                        : "待接入"}
-                    </span>
-                  </div>
-                  <code>{model.id}</code>
-                  {model.kind === "comfy_workflow" && (
-                    <span className="workflow-model-source">
-                      ComfyUI 工作流模型
-                    </span>
-                  )}
-                  <div className="model-capabilities">
-                    {model.capabilities.map((capability) => (
-                      <span key={capability}>
-                        {capabilityLabels[capability] ?? capability}
-                      </span>
-                    ))}
-                  </div>
-                  <div className="model-meta-row">
-                    <span>执行方式</span>
-                    <strong>
-                      {model.executionMode === "async" ? "异步任务" : "同步"}
-                    </strong>
-                  </div>
-                  <div className="model-card-actions">
-                    <button
-                      type="button"
-                      disabled={!defaultKind || isDefault}
-                      onClick={() => {
-                        if (defaultKind === "text") {
-                          void settings.selectModel(model.id);
-                        } else if (defaultKind === "image") {
-                          void settings.selectMediaModel(model.id, "image");
-                        } else if (defaultKind === "video") {
-                          void settings.selectMediaModel(model.id, "video");
-                        }
-                      }}
-                    >
-                      {isDefault
-                        ? "当前默认"
-                        : defaultKind === "image"
-                          ? "设为默认图片"
-                          : defaultKind === "video"
-                            ? "设为默认视频"
-                            : "设为默认文本"}
-                    </button>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
+                  ))}
+                </div>
+                <div className="model-meta-row">
+                  <span>执行方式</span>
+                  <strong>
+                    {model.executionMode === "async" ? "异步任务" : "同步"}
+                  </strong>
+                </div>
+                <div className="model-card-actions">
+                  <button
+                    type="button"
+                    disabled={!defaultKind || isDefault}
+                    onClick={() => {
+                      if (defaultKind === "text") {
+                        void settings.selectModel(model.id);
+                      } else if (defaultKind === "image") {
+                        void settings.selectMediaModel(model.id, "image");
+                      } else if (defaultKind === "video") {
+                        void settings.selectMediaModel(model.id, "video");
+                      }
+                    }}
+                  >
+                    {isDefault
+                      ? "当前默认"
+                      : defaultKind === "image"
+                        ? "设为默认图片"
+                        : defaultKind === "video"
+                          ? "设为默认视频"
+                          : "设为默认文本"}
+                  </button>
+                </div>
+              </article>
+            );
+          })}
+        </div>
 
-          {visibleModels.length === 0 && (
-            <div className="empty-library model-empty">
-              <Sparkles size={25} />
-              <h2>当前分类没有模型</h2>
-            </div>
-          )}
+        {visibleModels.length === 0 && (
+          <div className="empty-library model-empty">
+            <Sparkles size={25} />
+            <h2>当前分类没有模型</h2>
+          </div>
+        )}
       </section>
     </main>
   );

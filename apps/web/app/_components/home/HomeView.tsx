@@ -100,11 +100,7 @@ export function HomeView({
         >
           <Menu size={21} />
         </button>
-        <button
-          className="home-history"
-          type="button"
-          onClick={onOpenHistory}
-        >
+        <button className="home-history" type="button" onClick={onOpenHistory}>
           <History size={17} />
           历史会话
         </button>
@@ -114,9 +110,17 @@ export function HomeView({
         </span>
       </header>
       <section className="creation-zone">
-        <h1>
-          开启你的 <em>Agent 创作</em>，即刻造梦！
-        </h1>
+        <div className="creation-intro">
+          <span className="creation-index">AGENT STUDIO / 创意起点</span>
+          <h1>
+            从一句想法开始，
+            <em>把创意做成作品。</em>
+          </h1>
+          <p>
+            描述你的目标、画面或故事。Agent 会先把方向梳理清楚，再衔接图片、
+            视频与短剧生产。
+          </p>
+        </div>
         <Composer
           input={input}
           selectedModelName={selectedModelName}
@@ -133,24 +137,18 @@ export function HomeView({
           </p>
         )}
         <div className="quick-actions">
-          {quickActions.map(
-            ({ icon: Icon, title, detail, prompt }, index) => (
-              <button
-                key={title}
-                type="button"
-                onClick={() => onPrompt(prompt)}
-              >
-                <span className={`quick-icon tone-${index + 1}`}>
-                  <Icon size={20} />
-                </span>
-                <span>
-                  <strong>{title}</strong>
-                  <small>{detail}</small>
-                </span>
-                <ArrowUp size={16} />
-              </button>
-            ),
-          )}
+          {quickActions.map(({ icon: Icon, title, detail, prompt }, index) => (
+            <button key={title} type="button" onClick={() => onPrompt(prompt)}>
+              <span className={`quick-icon tone-${index + 1}`}>
+                <Icon size={20} />
+              </span>
+              <span>
+                <strong>{title}</strong>
+                <small>{detail}</small>
+              </span>
+              <ArrowUp size={16} />
+            </button>
+          ))}
         </div>
       </section>
       <section className="discover">
@@ -167,6 +165,10 @@ export function HomeView({
             <Search size={17} />
             <input aria-label="搜索灵感" placeholder="搜索创意灵感" />
           </label>
+        </div>
+        <div className="discover-intro">
+          <span>最近的视觉方向</span>
+          <small>选择一张灵感卡片，继续和 Agent 展开</small>
         </div>
         <div className="gallery">
           {galleryItems.map((item) => (

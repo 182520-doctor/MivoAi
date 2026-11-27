@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./theme.css";
+import "./drama-workspace.css";
+import "./studio-ui.css";
 import { StudioFrame } from "./_components/shell/StudioFrame";
 
 export const metadata: Metadata = {
@@ -8,7 +10,9 @@ export const metadata: Metadata = {
   description: "连接本地 Codex App Server 的创意沟通网站",
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="zh-CN">
       <body>

@@ -35,6 +35,7 @@ class Database:
                     title TEXT NOT NULL,
                     codex_thread_id TEXT,
                     tool_runtime_version INTEGER NOT NULL DEFAULT 0,
+                    agent_runtime_signature TEXT NOT NULL DEFAULT '',
                     workspace_path TEXT,
                     project_id TEXT,
                     episode_id TEXT,
@@ -605,6 +606,12 @@ class Database:
                 "sessions",
                 "tool_runtime_version",
                 "INTEGER NOT NULL DEFAULT 0",
+            )
+            self._add_column_if_missing(
+                connection,
+                "sessions",
+                "agent_runtime_signature",
+                "TEXT NOT NULL DEFAULT ''",
             )
             self._add_column_if_missing(
                 connection,

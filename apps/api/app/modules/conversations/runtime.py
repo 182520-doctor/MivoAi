@@ -24,3 +24,4 @@ class ActiveTurn:
     generation_task_id: str | None = None
     project_id: str | None = None
     workspace_path: str | None = None
+    runtime_signature: str = ""

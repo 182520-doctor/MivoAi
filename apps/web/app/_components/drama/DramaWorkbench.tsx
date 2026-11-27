@@ -13,13 +13,11 @@ import {
   Sparkles,
   SplitSquareVertical,
   WandSparkles,
+  X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { DramaDocumentKind } from "../../_features/drama/types";
-import {
-  dramaPhases as phases,
-  dramaStages as stages,
-} from "../../_features/drama/productionStages";
+import { dramaStages as stages } from "../../_features/drama/productionStages";
 import { useDramaDocuments } from "../../_features/drama/useDramaDocuments";
 import { useDramaProduction } from "../../_features/drama/useDramaProduction";
 import { useDramaProjects } from "../../_features/drama/useDramaProjects";
@@ -73,13 +71,14 @@ export function DramaWorkbench() {
   const [viewMode, setViewMode] = useState<"canvas" | "flow">("canvas");
   const [targetShotId, setTargetShotId] = useState<string | null>(null);
   const [workspaceVersion, setWorkspaceVersion] = useState(0);
-  const [canvasScope, setCanvasScope] = useState<
-    "global" | "episode" | "stage"
-  >("global");
+  const [canvasScope, setCanvasScope] = useState<"global" | "episode">(
+    "global",
+  );
   const [selectedEpisodeId, setSelectedEpisodeId] = useState<string | null>(
     null,
   );
   const [embeddedAgentPrompt, setEmbeddedAgentPrompt] = useState("");
+  const [mobileAgentOpen, setMobileAgentOpen] = useState(false);
   const [agentContext, setAgentContext] = useState<{
     scope: "global" | "episode" | "stage";
     episodeId: string | null;
@@ -90,14 +89,7 @@ export function DramaWorkbench() {
   const selected =
     stages.find((stage) => stage.id === activeStage) ?? stages[0];
   const Icon = selected.icon;
-  const activeIndex = stages.findIndex((stage) => stage.id === activeStage);
   const documentKind = documentKindByStage[activeStage];
-  const activePhase =
-    phases.find((phase) => phase.stages.includes(activeStage as never)) ??
-    phases[0];
-  const phaseStages = stages.filter((stage) =>
-    activePhase.stages.includes(stage.id as never),
-  );
   const activeDocument = documentKind
     ? (documents.documents.find((document) => document.kind === documentKind) ??
       null)
@@ -188,13 +180,6 @@ export function DramaWorkbench() {
     setEmbeddedAgentPrompt(prompt);
   }
 
-  function selectPhase(phase: (typeof phases)[number]) {
-    if (!project) return;
-    setViewMode("flow");
-    if (phase.stages.includes(activeStage as never)) return;
-    void drama.updateStage(project.id, phase.stages[0]);
-  }
-
   function openCanvasStage(stage: string) {
     if (!project) return;
     setViewMode("flow");
@@ -222,8 +207,7 @@ export function DramaWorkbench() {
   }
 
   function selectStageScope(stageId: string) {
-    setCanvasScope("stage");
-    setViewMode("canvas");
+    setViewMode("flow");
     if (stageId !== activeStage) {
       void drama.updateStage(project?.id ?? "", stageId);
     }
@@ -422,7 +406,7 @@ export function DramaWorkbench() {
       ) : (
         <div className="drama-split-layout">
           <div className="drama-main-column">
-            <section className="drama-project-command">
+            <section className={`drama-project-command ${viewMode}`}>
               <div className="drama-project-identity">
                 <span>
                   <Clapperboard size={18} />
@@ -432,26 +416,6 @@ export function DramaWorkbench() {
                   <strong>{project.title}</strong>
                 </div>
               </div>
-              <nav className="drama-phase-nav" aria-label="短剧主流程">
-                {phases.map((phase, index) => {
-                  const PhaseIcon = phase.icon;
-                  return (
-                    <button
-                      key={phase.id}
-                      className={activePhase.id === phase.id ? "active" : ""}
-                      type="button"
-                      onClick={() => selectPhase(phase)}
-                    >
-                      <span>{String(index + 1).padStart(2, "0")}</span>
-                      <PhaseIcon size={16} />
-                      <div>
-                        <strong>{phase.label}</strong>
-                        <small>{phase.hint}</small>
-                      </div>
-                    </button>
-                  );
-                })}
-              </nav>
               <div className="drama-command-actions">
                 <div className="drama-view-switch">
                   <button
@@ -474,6 +438,13 @@ export function DramaWorkbench() {
                 <button type="button" onClick={beginNewProject}>
                   <Plus size={14} /> 新项目
                 </button>
+                <button
+                  className="drama-mobile-agent-toggle"
+                  type="button"
+                  onClick={() => setMobileAgentOpen(true)}
+                >
+                  <Sparkles size={14} /> Agent
+                </button>
               </div>
             </section>
 
@@ -489,116 +460,198 @@ export function DramaWorkbench() {
                 onStage={selectStageScope}
               />
               <div className="drama-live-center">
-                {viewMode === "canvas" ? (
-                  <DramaCanvasBoard
-                    projectId={project.id}
-                    projectTitle={project.title}
-                    visualStyle={project.visualStyle}
-                    activeStage={activeStage}
-                    scope={canvasScope}
-                    selectedEpisodeId={selectedEpisodeId}
-                    onScopeChange={setCanvasScope}
-                    onSelectEpisode={setSelectedEpisodeId}
-                    onOpenStage={openCanvasStage}
-                    onOpenShot={openCanvasShot}
-                    onOpenAgent={openAgentForStage}
-                    onScopeContextChange={setAgentContext}
-                    refreshToken={workspaceVersion}
-                  />
-                ) : (
-                  <section className="drama-workspace agent-closed">
-                    <article
-                      className={`drama-main-stage ${
-                        productionFocusedStage ? "production-focused" : ""
-                      }`}
-                    >
-                      <nav
-                        className="drama-stage-subnav"
-                        aria-label={activePhase.label}
-                      >
-                        {phaseStages.map((stage) => {
-                          const StageIcon = stage.icon;
-                          return (
-                            <button
-                              key={stage.id}
-                              className={
-                                stage.id === activeStage ? "active" : ""
-                              }
-                              type="button"
-                              onClick={() =>
-                                void drama.updateStage(project.id, stage.id)
-                              }
-                            >
-                              <StageIcon size={14} />
-                              <span>{stage.label}</span>
-                              <small>
-                                {String(
-                                  stages.findIndex(
-                                    (item) => item.id === stage.id,
-                                  ) + 1,
-                                ).padStart(2, "0")}
-                              </small>
-                            </button>
-                          );
-                        })}
-                      </nav>
-                      {!productionFocusedStage && (
-                        <div className="drama-main-stage-head">
-                          <div>
-                            <span className="eyebrow">
-                              阶段 {String(activeIndex + 1).padStart(2, "0")}
-                            </span>
-                            <h2>{selected.label}</h2>
-                            <p>{selected.detail}</p>
-                          </div>
-                          <span className="drama-stage-state">
-                            {activeIndex === 0
-                              ? "等待 Agent 起草"
-                              : "上游版本待锁定"}
+              {viewMode === "canvas" ? (
+                <DramaCanvasBoard
+                  projectId={project.id}
+                  projectTitle={project.title}
+                  visualStyle={project.visualStyle}
+                  activeStage={activeStage}
+                  scope={canvasScope}
+                  selectedEpisodeId={selectedEpisodeId}
+                  onScopeChange={setCanvasScope}
+                  onSelectEpisode={setSelectedEpisodeId}
+                  onOpenStage={openCanvasStage}
+                  onOpenShot={openCanvasShot}
+                  onOpenAgent={openAgentForStage}
+                  onScopeContextChange={setAgentContext}
+                  refreshToken={workspaceVersion}
+                />
+              ) : (
+                <section className="drama-workspace agent-closed">
+                  <article
+                    className={`drama-main-stage ${
+                      productionFocusedStage ? "production-focused" : ""
+                    }`}
+                  >
+                    {!productionFocusedStage && (
+                      <header className="drama-stage-workbar">
+                        <div>
+                          <span>
+                            <Icon size={15} />
+                            {selected.label}
                           </span>
+                          <strong>{selected.deliverable}</strong>
+                          <small>{selected.detail}</small>
                         </div>
-                      )}
+                        <div>
+                          <em>
+                            {activeDocument?.status === "approved"
+                              ? `v${activeDocument.version} 已审批`
+                              : activeDocument
+                                ? `v${activeDocument.version} 草稿`
+                                : "等待生成首版"}
+                          </em>
+                          {documentKind &&
+                            activeDocument?.status === "approved" && (
+                              <button
+                                type="button"
+                                disabled={
+                                  documents.saving || !draftContent.trim()
+                                }
+                                onClick={() =>
+                                  void documents.save(
+                                    documentKind,
+                                    activeDocument.title,
+                                    draftContent,
+                                  )
+                                }
+                              >
+                                <Plus size={14} />
+                                新版本
+                              </button>
+                            )}
+                          {documentKind &&
+                            activeDocument?.status !== "approved" && (
+                              <>
+                                <button
+                                  type="button"
+                                  disabled={
+                                    documents.saving || !draftContent.trim()
+                                  }
+                                  onClick={() => void saveStageDocument()}
+                                >
+                                  <BookOpenText size={14} />
+                                  保存草稿
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={!activeDocument || documents.saving}
+                                  onClick={() =>
+                                    activeDocument &&
+                                    void documents.approve(activeDocument.id)
+                                  }
+                                >
+                                  <CheckCircle2 size={14} />
+                                  审批通过
+                                </button>
+                              </>
+                            )}
+                          <button
+                            type="button"
+                            onClick={() => openAgentForStage()}
+                          >
+                            <Sparkles size={14} />
+                            {activeDocument ? "让 Agent 修订" : "让 Agent 起草"}
+                          </button>
+                        </div>
+                      </header>
+                    )}
 
-                      {!productionFocusedStage && (
-                        <>
-                          <div className="drama-stage-board">
-                            <span className="drama-stage-board-icon">
-                              <Icon size={28} />
+                    {documentKind ? (
+                      documentKind === "script" ? (
+                        <DramaScriptWorkspace
+                          script={activeDocument}
+                          storyBible={
+                            documents.documents.find(
+                              (document) => document.kind === "story_bible",
+                            ) ?? null
+                          }
+                          draftContent={draftContent}
+                          saving={documents.saving}
+                          onChangeDraft={setDraftContent}
+                          onSave={() => void saveStageDocument()}
+                          onApprove={() =>
+                            activeDocument &&
+                            void documents.approve(activeDocument.id)
+                          }
+                          onNext={() =>
+                            void drama.updateStage(project.id, "assets")
+                          }
+                        />
+                      ) : (
+                        <div className="drama-document-editor">
+                          <textarea
+                            value={draftContent}
+                            readOnly={activeDocument?.status === "approved"}
+                            onChange={(event) =>
+                              setDraftContent(event.target.value)
+                            }
+                            placeholder={`开始编写${selected.label}…`}
+                          />
+                          <div className="drama-document-editor-foot">
+                            <span>
+                              {documents.loading
+                                ? "正在读取文档…"
+                                : activeDocument?.updatedAt
+                                  ? `最近保存 ${activeDocument.updatedAt}`
+                                  : "尚未保存"}
                             </span>
-                            <div>
-                              <small>本阶段 Agent 任务</small>
-                              <h3>{selected.output}</h3>
-                              <p>{project.idea}</p>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => openAgentForStage()}
-                            >
-                              <Sparkles size={15} />在 Agent 中起草
-                              <small>先确认方向，再执行工具</small>
-                            </button>
+                            {documents.notice && (
+                              <strong>{documents.notice}</strong>
+                            )}
                           </div>
-
-                          <div className="drama-stage-contract">
-                            <div>
-                              <span>交付物</span>
-                              <strong>{selected.deliverable}</strong>
-                            </div>
-                            <div>
-                              <span>下一步</span>
-                              <strong>
-                                {stages[Math.min(activeIndex + 1, 7)].label}
-                              </strong>
-                            </div>
-                            <div>
-                              <span>审批规则</span>
-                              <strong>生成草稿 → 人工确认 → 版本锁定</strong>
-                            </div>
-                          </div>
-                        </>
-                      )}
-
-                      {!productionFocusedStage && (
+                        </div>
+                      )
+                    ) : activeStage === "breakdown" ? (
+                      <DramaProductionBoard
+                        projectId={project.id}
+                        refreshToken={workspaceVersion}
+                      />
+                    ) : activeStage === "assets" ? (
+                      <DramaAssetBoard
+                        projectId={project.id}
+                        refreshToken={workspaceVersion}
+                        onOpenAgent={openAgentForStage}
+                      />
+                    ) : activeStage === "keyframes" ? (
+                      <DramaKeyframeBoard
+                        projectId={project.id}
+                        episodeId={selectedEpisodeId}
+                        initialShotId={targetShotId}
+                        refreshToken={workspaceVersion}
+                        onOpenAgent={openAgentForStage}
+                      />
+                    ) : activeStage === "clips" ? (
+                      <DramaClipBoard
+                        projectId={project.id}
+                        aspectRatio={project.format}
+                        episodeId={selectedEpisodeId}
+                        initialShotId={targetShotId}
+                        refreshToken={workspaceVersion}
+                        onOpenAgent={openAgentForStage}
+                      />
+                    ) : activeStage === "timeline" ? (
+                      <DramaTimelineBoard
+                        projectId={project.id}
+                        aspectRatio={project.format}
+                        refreshToken={workspaceVersion}
+                      />
+                    ) : (
+                      <div className="drama-empty-canvas">
+                        <FolderKanban size={30} />
+                        <strong>还没有 {selected.label} 内容</strong>
+                        <p>
+                          Agent
+                          会把生成内容放在这里，并保留每一次重做、审批和版本记录。
+                        </p>
+                      </div>
+                    )}
+                    {productionFocusedStage && (
+                      <details className="drama-review-drawer">
+                        <summary>
+                          <span>审核与制作控制</span>
+                          <small>质量门、角色审核和批量运行</small>
+                        </summary>
                         <DramaControlRoom
                           projectId={project.id}
                           episodeId={selectedEpisodeId}
@@ -607,182 +660,26 @@ export function DramaWorkbench() {
                           onApproved={() => void drama.refresh()}
                           refreshToken={workspaceVersion}
                         />
-                      )}
-
-                      {documentKind ? (
-                        documentKind === "script" ? (
-                          <DramaScriptWorkspace
-                            script={activeDocument}
-                            storyBible={
-                              documents.documents.find(
-                                (document) => document.kind === "story_bible",
-                              ) ?? null
-                            }
-                            draftContent={draftContent}
-                            saving={documents.saving}
-                            onChangeDraft={setDraftContent}
-                            onSave={() => void saveStageDocument()}
-                            onApprove={() =>
-                              activeDocument &&
-                              void documents.approve(activeDocument.id)
-                            }
-                            onNext={() =>
-                              void drama.updateStage(project.id, "assets")
-                            }
-                          />
-                        ) : (
-                          <div className="drama-document-editor">
-                            <div className="drama-document-editor-head">
-                              <div>
-                                <span>
-                                  {activeDocument
-                                    ? `v${activeDocument.version} · ${
-                                        activeDocument.status === "approved"
-                                          ? "已审批"
-                                          : "草稿"
-                                      }`
-                                    : "新文档"}
-                                </span>
-                                <strong>{selected.deliverable}</strong>
-                              </div>
-                              <div>
-                                {activeDocument?.status === "approved" ? (
-                                  <button
-                                    type="button"
-                                    disabled={
-                                      documents.saving || !draftContent.trim()
-                                    }
-                                    onClick={() =>
-                                      void documents.save(
-                                        documentKind,
-                                        activeDocument.title,
-                                        draftContent,
-                                      )
-                                    }
-                                  >
-                                    <Plus size={14} />
-                                    创建新版本
-                                  </button>
-                                ) : (
-                                  <>
-                                    <button
-                                      type="button"
-                                      disabled={
-                                        documents.saving || !draftContent.trim()
-                                      }
-                                      onClick={() => void saveStageDocument()}
-                                    >
-                                      <BookOpenText size={14} />
-                                      保存草稿
-                                    </button>
-                                    <button
-                                      type="button"
-                                      disabled={
-                                        !activeDocument || documents.saving
-                                      }
-                                      onClick={() =>
-                                        activeDocument &&
-                                        void documents.approve(
-                                          activeDocument.id,
-                                        )
-                                      }
-                                    >
-                                      <CheckCircle2 size={14} />
-                                      审批通过
-                                    </button>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                            <textarea
-                              value={draftContent}
-                              readOnly={activeDocument?.status === "approved"}
-                              onChange={(event) =>
-                                setDraftContent(event.target.value)
-                              }
-                              placeholder={`开始编写${selected.label}…`}
-                            />
-                            <div className="drama-document-editor-foot">
-                              <span>
-                                {documents.loading
-                                  ? "正在读取文档…"
-                                  : activeDocument?.updatedAt
-                                    ? `最近保存 ${activeDocument.updatedAt}`
-                                    : "尚未保存"}
-                              </span>
-                              {documents.notice && (
-                                <strong>{documents.notice}</strong>
-                              )}
-                            </div>
-                          </div>
-                        )
-                      ) : activeStage === "breakdown" ? (
-                        <DramaProductionBoard
-                          projectId={project.id}
-                          refreshToken={workspaceVersion}
-                        />
-                      ) : activeStage === "assets" ? (
-                        <DramaAssetBoard
-                          projectId={project.id}
-                          refreshToken={workspaceVersion}
-                          onOpenAgent={openAgentForStage}
-                        />
-                      ) : activeStage === "keyframes" ? (
-                        <DramaKeyframeBoard
-                          projectId={project.id}
-                          episodeId={selectedEpisodeId}
-                          initialShotId={targetShotId}
-                          refreshToken={workspaceVersion}
-                          onOpenAgent={openAgentForStage}
-                        />
-                      ) : activeStage === "clips" ? (
-                        <DramaClipBoard
-                          projectId={project.id}
-                          aspectRatio={project.format}
-                          episodeId={selectedEpisodeId}
-                          initialShotId={targetShotId}
-                          refreshToken={workspaceVersion}
-                          onOpenAgent={openAgentForStage}
-                        />
-                      ) : activeStage === "timeline" ? (
-                        <DramaTimelineBoard
-                          projectId={project.id}
-                          aspectRatio={project.format}
-                          refreshToken={workspaceVersion}
-                        />
-                      ) : (
-                        <div className="drama-empty-canvas">
-                          <FolderKanban size={30} />
-                          <strong>还没有 {selected.label} 内容</strong>
-                          <p>
-                            Agent
-                            会把生成内容放在这里，并保留每一次重做、审批和版本记录。
-                          </p>
-                        </div>
-                      )}
-                      {productionFocusedStage && (
-                        <details className="drama-review-drawer">
-                          <summary>
-                            <span>审核与制作控制</span>
-                            <small>质量门、角色审核和批量运行</small>
-                          </summary>
-                          <DramaControlRoom
-                            projectId={project.id}
-                            episodeId={selectedEpisodeId}
-                            stage={activeStage}
-                            onOpenAgent={openAgentForStage}
-                            onApproved={() => void drama.refresh()}
-                            refreshToken={workspaceVersion}
-                          />
-                        </details>
-                      )}
-                    </article>
-                  </section>
-                )}
-              </div>
-            </section>
+                      </details>
+                    )}
+                  </article>
+                </section>
+              )}
+            </div>
+          </section>
           </div>
-          <div className="drama-agent-column">
+          <div
+            className={`drama-agent-column ${
+              mobileAgentOpen ? "mobile-open" : ""
+            }`}
+          >
+            <button
+              className="drama-mobile-agent-close"
+              type="button"
+              onClick={() => setMobileAgentOpen(false)}
+            >
+              关闭 Agent <X size={15} />
+            </button>
             <DramaAgentPanel
               projectId={project.id}
               projectTitle={project.title}

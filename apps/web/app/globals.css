@@ -5213,7 +5213,7 @@ main.drama-studio-page .drama-agent-resize-handle {
 }
 
 .drama-episode-plan-grid textarea {
-  min-height: 58px;
+  min-height: 74px;
   padding: 7px 8px;
   resize: vertical;
   line-height: 1.55;
@@ -21915,4 +21915,1047 @@ html[data-theme="dark"] .drama-quickstart-copy h2 em {
   background: linear-gradient(92deg, #ffffff, #b8b8b8);
   -webkit-background-clip: text;
   background-clip: text;
+}
+
+/* Final responsive override: the editor owns the viewport below 980px. */
+@media (max-width: 980px) {
+  main.drama-studio-page .drama-split-layout {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    overflow: visible !important;
+  }
+
+  main.drama-studio-page .drama-main-column {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    grid-column: 1 !important;
+  }
+
+  main.drama-studio-page .drama-live-workspace,
+  main.drama-studio-page .drama-live-center {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+  }
+
+  main.drama-studio-page .drama-agent-column {
+    position: fixed !important;
+    z-index: 120 !important;
+    inset: 0 0 0 auto !important;
+    width: min(92vw, 430px) !important;
+    height: 100vh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    background: #fff !important;
+    box-shadow: -18px 0 48px rgba(17, 31, 38, .2) !important;
+    transform: translateX(103%) !important;
+    transition: transform .22s ease !important;
+    pointer-events: none !important;
+  }
+
+  main.drama-studio-page .drama-agent-column.mobile-open {
+    transform: translateX(0) !important;
+    pointer-events: auto !important;
+  }
+
+  main.drama-studio-page .drama-agent-column .drama-agent-panel {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+  }
+
+  main.drama-studio-page .drama-mobile-agent-toggle,
+  main.drama-studio-page .drama-mobile-agent-close,
+  main.drama-studio-page .drama-mobile-agent-backdrop {
+    display: inline-flex !important;
+  }
+
+  main.drama-studio-page .drama-mobile-agent-backdrop {
+    position: fixed !important;
+    z-index: 119 !important;
+    inset: 0 !important;
+    border: 0 !important;
+    background: rgba(20, 30, 35, .32) !important;
+  }
+}
+
+/* Scope-first drama hierarchy */
+/* Production workspace uses one flat surface and a compact type scale. */
+main.drama-studio-page .drama-main-stage {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+main.drama-studio-page
+  .drama-main-stage
+  :is(
+    .drama-document-editor,
+    .drama-script-workspace,
+    .drama-production-board,
+    .drama-asset-board,
+    .drama-keyframe-board,
+    .drama-timeline-board
+  ) {
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+main.drama-studio-page
+  .drama-main-stage
+  :is(
+    .drama-episode-plan,
+    .drama-character-voice,
+    .drama-slot-generation-bar,
+    .drama-shot-binding-context,
+    .drama-run-panel,
+    .drama-gate-decision,
+    .drama-keyframe-context,
+    .drama-episode-asset-shelf,
+    .drama-timeline-export,
+    .drama-timeline-transition,
+    .drama-subtitle-style
+  ) {
+  border-width: 1px 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+main.drama-studio-page .drama-main-stage :is(h2, h3) {
+  margin-top: 0;
+  font-size: 15px;
+  line-height: 1.35;
+  letter-spacing: -.01em;
+}
+
+main.drama-studio-page .drama-main-stage :is(h2, h3) + p {
+  margin-top: 3px;
+}
+
+.drama-stage-loading {
+  min-height: 180px;
+  padding: 24px;
+  color: #6f7d85;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+}
+
+main.drama-studio-page .drama-stage-workbar > div:first-child > strong {
+  font-size: 13px;
+}
+
+main.drama-studio-page .drama-canvas-context > strong {
+  font-size: 13px;
+}
+
+main.drama-studio-page
+  .drama-main-stage
+  :is(
+    .drama-asset-board > header,
+    .drama-keyframe-board > header,
+    .drama-timeline-board > header,
+    .drama-production-board > header
+  ) {
+  padding-top: 10px;
+  padding-bottom: 10px;
+  box-shadow: none;
+}
+
+main.drama-studio-page .drama-main-stage .drama-production-board {
+  margin-top: 0;
+  border: 0;
+  background: transparent;
+}
+
+main.drama-studio-page .drama-main-stage .drama-episode-plan {
+  margin: 0;
+  padding-right: 0;
+  padding-left: 0;
+  border-right: 0;
+  border-left: 0;
+}
+
+.drama-mobile-agent-toggle,
+.drama-mobile-agent-close,
+.drama-mobile-agent-backdrop {
+  display: none;
+}
+
+@media (max-width: 980px) {
+  main.drama-studio-page .drama-split-layout {
+    grid-template-columns: minmax(0, 1fr) !important;
+    overflow: visible;
+  }
+
+  main.drama-studio-page .drama-main-column {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+  }
+
+  main.drama-studio-page .drama-main-column .drama-live-center,
+  main.drama-studio-page .drama-main-column .drama-live-workspace {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  main.drama-studio-page .drama-mobile-agent-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  main.drama-studio-page .drama-agent-column {
+    position: fixed !important;
+    z-index: 120;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(92vw, 430px) !important;
+    height: 100vh !important;
+    display: flex !important;
+    flex-direction: column;
+    background: #fff;
+    box-shadow: -18px 0 48px rgba(17, 31, 38, .2);
+    transform: translateX(103%);
+    transition: transform .22s ease;
+    pointer-events: none;
+  }
+
+  main.drama-studio-page .drama-agent-column.mobile-open {
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+
+  main.drama-studio-page .drama-agent-column .drama-agent-panel {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    flex: 1;
+  }
+
+  main.drama-studio-page .drama-mobile-agent-close {
+    min-height: 42px;
+    padding: 0 12px;
+    border: 0;
+    border-bottom: 1px solid #e1e7e7;
+    background: #f7f9f8;
+    color: #3c4b53;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 700;
+  }
+
+  main.drama-studio-page .drama-mobile-agent-backdrop {
+    position: fixed;
+    z-index: 119;
+    inset: 0;
+    border: 0;
+    background: rgba(20, 30, 35, .32);
+    display: block;
+  }
+}
+
+.drama-project-command.canvas,
+.drama-project-command.flow {
+  min-height: 62px;
+  padding: 8px 12px;
+  grid-template-columns: minmax(220px, 1fr) auto;
+}
+
+.drama-main-stage:not(.production-focused) {
+  height: calc(100vh - 170px);
+  min-height: 620px;
+  display: flex;
+  flex-direction: column;
+}
+
+.drama-main-stage:not(.production-focused) .drama-document-editor {
+  min-height: 420px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.drama-main-stage:not(.production-focused)
+  .drama-document-editor
+  textarea {
+  min-height: 340px;
+  flex: 1;
+}
+
+.drama-main-stage:not(.production-focused) > .drama-script-workspace {
+  flex: 1;
+}
+
+.drama-stage-workbar {
+  min-height: 64px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2e8eb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.drama-stage-workbar > div:first-child {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  gap: 3px 10px;
+}
+
+.drama-stage-workbar > div:first-child > span {
+  color: #3186ae;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.drama-stage-workbar > div:first-child > strong {
+  overflow: hidden;
+  color: #23313a;
+  font-size: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.drama-stage-workbar > div:first-child > small {
+  grid-column: 1 / -1;
+  color: #73818a;
+  font-size: 10px;
+}
+
+.drama-stage-workbar > div:last-child {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.drama-stage-workbar em {
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #f7f1e5;
+  color: #846739;
+  font-size: 9px;
+  font-style: normal;
+  white-space: nowrap;
+}
+
+.drama-stage-workbar button {
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid #9fc8dc;
+  border-radius: 8px;
+  background: #ecf8ff;
+  color: #126d99;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.drama-canvas-toolbar {
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 60px;
+  padding: 7px 14px;
+}
+
+.drama-canvas-context {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.drama-canvas-context > strong {
+  overflow: hidden;
+  color: #eef4f7;
+  font-size: 15px;
+  letter-spacing: -.02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.drama-canvas-context > small {
+  color: #7f8d96;
+  font-size: 10px;
+}
+
+.drama-canvas-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #65747d;
+}
+
+.drama-canvas-breadcrumb button,
+.drama-canvas-breadcrumb span {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #7f8e98;
+  font-size: 9px;
+}
+
+.drama-canvas-metrics span {
+  min-height: 26px;
+  padding: 0 7px;
+}
+
+.drama-canvas-breadcrumb button {
+  cursor: pointer;
+}
+
+.drama-canvas-breadcrumb button:hover {
+  color: #b8d8e8;
+}
+
+.drama-canvas-breadcrumb span {
+  color: #b2c2cb;
+  font-weight: 700;
+}
+
+.drama-overview-guide {
+  max-width: 460px;
+  padding: 9px 12px;
+  border: 1px solid #2b333b;
+  border-radius: 8px;
+  background: #171c21;
+  color: #82919a;
+  font-size: 9px;
+  line-height: 1.55;
+}
+
+.drama-stage-scope.compact {
+  min-height: 0;
+  display: block;
+  padding: 14px;
+}
+
+.drama-episode-scope.compact {
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 0;
+  padding: 0 14px 14px;
+  background: transparent;
+}
+
+.drama-episode-scope.compact .drama-scope-main {
+  padding: 14px 2px 4px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.drama-episode-lead {
+  padding-bottom: 14px;
+  border-bottom: 1px solid #e2e8eb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.drama-episode-lead > p {
+  max-width: 720px;
+  margin: 0;
+  color: #465761;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.drama-episode-lead > div {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.drama-episode-lead > div > span {
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #f7f1e5;
+  color: #846739;
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.drama-episode-lead > div > span.ready {
+  background: #edf8f2;
+  color: #267c55;
+}
+
+.drama-episode-lead > div > span.risk {
+  background: #fff2ef;
+  color: #a45c51;
+}
+
+.drama-episode-lead button {
+  min-height: 32px;
+  padding: 0 9px;
+  border: 1px solid #9fc8dc;
+  border-radius: 7px;
+  background: #edf8ff;
+  color: #126d99;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  font-size: 9px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.drama-episode-overview-grid {
+  margin-top: 12px;
+  padding: 14px 0;
+  border-top: 1px solid #e2e8eb;
+  border-bottom: 1px solid #e2e8eb;
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(280px, .75fr);
+  align-items: start;
+  gap: 0;
+}
+
+.drama-episode-plan-block,
+.drama-episode-contract-block {
+  min-width: 0;
+  padding-right: 18px;
+}
+
+.drama-episode-contract-block {
+  padding-right: 0;
+  padding-left: 18px;
+  border-left: 1px solid #e2e8eb;
+}
+
+.drama-episode-plan-block > header,
+.drama-episode-contract-block > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.drama-episode-plan-block > header strong,
+.drama-episode-contract-block > header strong {
+  color: #2d3b43;
+  font-size: 11px;
+}
+
+.drama-episode-plan-block > header em,
+.drama-episode-contract-block > header em {
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: #f7f1e5;
+  color: #846739;
+  font-size: 8px;
+  font-style: normal;
+  white-space: nowrap;
+}
+
+.drama-episode-plan-block > header em.ready,
+.drama-episode-contract-block > header em.ready {
+  background: #edf8f2;
+  color: #267c55;
+}
+
+.drama-episode-plan-block .drama-episode-plan-fields {
+  margin-top: 9px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 18px;
+}
+
+.drama-episode-plan-more {
+  margin-top: 5px;
+}
+
+.drama-episode-plan-more > summary {
+  padding: 5px 0;
+  color: #6f7d85;
+  cursor: pointer;
+  font-size: 8px;
+  list-style: none;
+}
+
+.drama-episode-plan-more > summary::-webkit-details-marker {
+  display: none;
+}
+
+.drama-episode-plan-more > summary::before {
+  content: "＋";
+  margin-right: 5px;
+  color: #2682aa;
+}
+
+.drama-episode-plan-more[open] > summary::before {
+  content: "－";
+}
+
+.drama-episode-plan-more .drama-episode-plan-fields {
+  margin-top: 2px;
+}
+
+.drama-episode-plan-block .drama-episode-plan-fields > div {
+  min-height: 46px;
+  padding: 8px 0;
+  border: 0;
+  border-bottom: 1px solid #edf1f3;
+  border-radius: 0;
+  background: transparent;
+  gap: 2px;
+}
+
+.drama-episode-plan-block .drama-episode-plan-fields span {
+  color: #7b888f;
+  font-size: 8px;
+}
+
+.drama-episode-plan-block .drama-episode-plan-fields strong {
+  color: #34444d;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.drama-episode-contract-block > p {
+  margin: 10px 0;
+  color: #6e7b83;
+  font-size: 10px;
+  line-height: 1.65;
+}
+
+.drama-episode-contract-preview {
+  margin-top: 9px;
+  display: grid;
+  gap: 0;
+}
+
+.drama-episode-contract-preview article {
+  padding: 8px 0;
+  border-bottom: 1px solid #edf1f3;
+  display: grid;
+  gap: 2px;
+}
+
+.drama-episode-contract-preview article strong {
+  color: #35454e;
+  font-size: 10px;
+}
+
+.drama-episode-contract-preview article span {
+  color: #2f7d62;
+  font-size: 8px;
+}
+
+.drama-episode-contract-preview article small {
+  overflow: hidden;
+  color: #748087;
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.drama-episode-risk-list {
+  margin-top: 8px;
+  display: grid;
+  gap: 4px;
+}
+
+.drama-episode-risk-list > span {
+  color: #a25a50;
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.drama-episode-risk-list small {
+  color: #765e59;
+  font-size: 8px;
+  line-height: 1.45;
+}
+
+.drama-episode-contract-block > button {
+  min-height: 30px;
+  margin-top: 9px;
+  padding: 0 8px;
+  border: 1px solid #9fc8dc;
+  border-radius: 7px;
+  background: #edf8ff;
+  color: #126d99;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.drama-episode-scope.compact .drama-episode-artifacts button {
+  min-height: 38px;
+  padding: 6px 4px;
+  border: 0;
+  border-bottom: 1px solid #e5eaed;
+  border-radius: 0;
+  background: transparent;
+}
+
+.drama-episode-scope.compact .drama-episode-artifacts button small {
+  font-size: 8px;
+}
+
+.drama-episode-scope.compact .drama-episode-audit {
+  margin: 10px 0 0;
+  padding: 9px 0;
+  border: 0;
+  border-top: 1px solid #eadfbd;
+  border-bottom: 1px solid #eadfbd;
+  border-radius: 0;
+  background: #fffdf6;
+}
+
+.drama-episode-scope.compact .drama-episode-audit.failed {
+  border-color: #efd4cf;
+  background: #fff8f6;
+}
+
+.drama-episode-scope.compact .drama-episode-audit.warning {
+  border-color: #eadfbd;
+  background: #fffdf6;
+}
+
+.drama-episode-scope.compact .drama-episode-artifacts {
+  margin-top: 10px;
+  padding-top: 7px;
+  border-top: 1px solid #e2e8eb;
+}
+
+.drama-episode-scope.compact .drama-episode-artifacts > div {
+  gap: 0 14px;
+}
+
+@media (max-width: 1050px) {
+  .drama-episode-overview-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .drama-episode-plan-block {
+    padding-right: 0;
+    padding-bottom: 14px;
+  }
+
+  .drama-episode-contract-block {
+    padding: 14px 0 0;
+    border-top: 1px solid #e2e8eb;
+    border-left: 0;
+  }
+}
+
+.drama-stage-scope.compact .drama-stage-scope-main {
+  padding: 18px;
+}
+
+.drama-stage-scope-summary {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.drama-stage-scope-summary article {
+  min-height: 92px;
+  padding: 12px;
+  border: 1px solid #29323a;
+  border-radius: 9px;
+  background: #171c21;
+  display: grid;
+  align-content: start;
+  gap: 5px;
+}
+
+.drama-stage-scope-summary small {
+  color: #75838c;
+  font-size: 8px;
+}
+
+.drama-stage-scope-summary strong {
+  color: #e2ebf0;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.drama-stage-scope-summary span {
+  color: #8d9aa2;
+  font-size: 9px;
+  line-height: 1.55;
+}
+
+.drama-stage-scope-gaps {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #34302a;
+  border-radius: 9px;
+  background: #1e1b17;
+  display: grid;
+  gap: 8px;
+}
+
+.drama-stage-scope-gaps > span {
+  color: #b09b75;
+  font-size: 9px;
+  font-weight: 750;
+}
+
+.drama-stage-scope-gaps > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.drama-stage-scope-gaps > div > span {
+  padding: 6px 8px;
+  border: 1px solid #493f31;
+  border-radius: 7px;
+  background: #242019;
+  color: #d1b98c;
+  display: grid;
+  gap: 2px;
+  font-size: 9px;
+}
+
+.drama-stage-scope-gaps > div > span small,
+.drama-stage-scope-gaps em {
+  color: #8d816d;
+  font-size: 8px;
+  font-style: normal;
+}
+
+.drama-stage-scope-gaps > strong {
+  color: #8bc7aa;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+}
+
+.drama-stage-scope-footer {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #293139;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.drama-stage-scope-footer span {
+  color: #77858d;
+  font-size: 9px;
+}
+
+.drama-stage-scope-footer small {
+  color: #65737c;
+  font-size: 8px;
+}
+
+.drama-episode-plan-summary {
+  margin-top: 12px;
+  border: 1px solid #29323a;
+  border-radius: 9px;
+  background: #151a1f;
+}
+
+.drama-episode-plan-summary > summary {
+  padding: 10px 12px;
+  color: #d8e2e7;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 700;
+  list-style: none;
+}
+
+.drama-episode-plan-summary > summary::-webkit-details-marker {
+  display: none;
+}
+
+.drama-episode-plan-summary > summary small {
+  color: #7d8a93;
+  font-size: 8px;
+  font-weight: 500;
+}
+
+.drama-episode-plan-summary .drama-episode-plan-fields {
+  margin: 0;
+  padding: 0 12px 12px;
+}
+
+.theme-light .drama-canvas-context > strong {
+  color: #223038;
+}
+
+.theme-light .drama-canvas-context > small,
+.theme-light .drama-canvas-breadcrumb {
+  color: #748087;
+}
+
+.theme-light .drama-canvas-breadcrumb button {
+  color: #6b7a83;
+}
+
+.theme-light .drama-canvas-breadcrumb button:hover,
+.theme-light .drama-canvas-breadcrumb span {
+  color: #315d70;
+}
+
+.theme-light .drama-overview-guide,
+.theme-light .drama-stage-scope-summary article,
+.theme-light .drama-episode-plan-summary {
+  border-color: #dfe4e1;
+  background: #f8f9f7;
+}
+
+.theme-light .drama-overview-guide,
+.theme-light .drama-stage-scope-summary small,
+.theme-light .drama-stage-scope-summary span,
+.theme-light .drama-stage-scope-footer span,
+.theme-light .drama-stage-scope-footer small,
+.theme-light .drama-episode-plan-summary > summary small {
+  color: #6f7b82;
+}
+
+.theme-light .drama-stage-scope-summary strong,
+.theme-light .drama-episode-plan-summary > summary {
+  color: #29363d;
+}
+
+.theme-light .drama-stage-scope-gaps {
+  border-color: #e6dccc;
+  background: #fbf7ef;
+}
+
+.theme-light .drama-stage-scope-gaps > span {
+  color: #8d7447;
+}
+
+.theme-light .drama-stage-scope-gaps > div > span {
+  border-color: #e5d8c2;
+  background: #fffaf1;
+  color: #7d6338;
+}
+
+.theme-light .drama-stage-scope-footer {
+  border-color: #e0e5e2;
+}
+
+@media (max-width: 900px) {
+  .drama-canvas-toolbar {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .drama-canvas-metrics {
+    justify-content: flex-start;
+  }
+
+  .drama-stage-scope-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .drama-episode-scope.compact {
+    grid-template-columns: 1fr;
+  }
+
+  .drama-episode-lead {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 640px) {
+  .drama-stage-scope-footer,
+  .drama-episode-plan-summary > summary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .drama-stage-workbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+/* Last rule set: keep the drama editor full-width at compact desktop sizes. */
+@media (max-width: 980px) {
+  main.drama-studio-page .drama-split-layout {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  main.drama-studio-page .drama-main-column {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    grid-column: 1 !important;
+  }
+
+  main.drama-studio-page .drama-live-workspace,
+  main.drama-studio-page .drama-live-center {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+  }
+
+  main.drama-studio-page .drama-agent-column {
+    position: fixed !important;
+    z-index: 120 !important;
+    inset: 0 0 0 auto !important;
+    width: min(92vw, 430px) !important;
+    height: 100vh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    background: #fff !important;
+    box-shadow: -18px 0 48px rgba(17, 31, 38, .2) !important;
+    transform: translateX(103%) !important;
+    transition: transform .22s ease !important;
+    pointer-events: none !important;
+  }
+
+  main.drama-studio-page .drama-agent-column.mobile-open {
+    transform: translateX(0) !important;
+    pointer-events: auto !important;
+  }
+
+  main.drama-studio-page .drama-agent-column .drama-agent-panel {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+  }
+
+  main.drama-studio-page .drama-mobile-agent-toggle,
+  main.drama-studio-page .drama-mobile-agent-close,
+  main.drama-studio-page .drama-mobile-agent-backdrop {
+    display: inline-flex !important;
+  }
+
+  main.drama-studio-page .drama-mobile-agent-backdrop {
+    position: fixed !important;
+    z-index: 119 !important;
+    inset: 0 !important;
+    border: 0 !important;
+    background: rgba(20, 30, 35, .32) !important;
+  }
 }

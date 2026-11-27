@@ -16,9 +16,11 @@ from collections.abc import AsyncIterator, Awaitable, Callable
 from pathlib import Path
 from typing import Any
 
+from app.adapters.codex.runtime import codex_runtime_signature
 from app.modules.conversations.events import CodexEvent
 from app.shared.errors import AppServerError
 from app.shared.protocol_logging import create_protocol_logger, redact_protocol_value
+from app.shared.windows_environment import refresh_windows_user_environment
 
 
 class CodexAppServerClient:
@@ -44,6 +46,7 @@ class CodexAppServerClient:
         self.requires_openai_auth: bool | None = None
         self.dynamic_tools = list(dynamic_tools or [])
         self.dynamic_tool_handler = dynamic_tool_handler
+        self._runtime_signature: str | None = None
 
         # JSON-RPC responses only carry numeric IDs. Futures connect each response
         # back to the coroutine that issued the corresponding request.
@@ -84,8 +87,11 @@ class CodexAppServerClient:
         """Start and initialize App Server once, even under concurrent requests."""
 
         async with self._start_lock:
-            if self.running:
+            runtime_signature = self.runtime_signature()
+            if self.running and self._runtime_signature == runtime_signature:
                 return
+            if self.running:
+                await self.stop()
             self.account = None
             self.requires_openai_auth = None
             if not self.binary.is_file():
@@ -100,6 +106,7 @@ class CodexAppServerClient:
 
             self.workspace.mkdir(parents=True, exist_ok=True)
             self._loaded_threads.clear()
+            refresh_windows_user_environment()
             command = [str(self.binary), "app-server", "--stdio"]
             if self.binary.suffix.lower() in {".cmd", ".bat"}:
                 command = [
@@ -145,12 +152,14 @@ class CodexAppServerClient:
             self.requires_openai_auth = account_result.get(
                 "requiresOpenaiAuth"
             )
+            self._runtime_signature = runtime_signature
 
     async def stop(self) -> None:
         """Stop App Server and release background reader tasks."""
 
         process = self.process
         self.process = None
+        self._runtime_signature = None
         self.account = None
         self.requires_openai_auth = None
         if process and process.returncode is None:
@@ -536,6 +545,9 @@ class CodexAppServerClient:
             "codeModeHost": str(self._code_mode_host_path()),
             "codeModeHostAvailable": self._code_mode_host_path().is_file(),
         }
+
+    def runtime_signature(self) -> str:
+        return codex_runtime_signature()
 
     def _code_mode_host_path(self) -> Path:
         suffix = ".exe" if os.name == "nt" else ""

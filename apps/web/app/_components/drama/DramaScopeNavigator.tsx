@@ -12,7 +12,7 @@ import {
 import type { DramaEpisode } from "../../_features/drama/types";
 import { dramaStages } from "../../_features/drama/productionStages";
 
-type DramaScope = "global" | "episode" | "stage";
+type DramaScope = "global" | "episode";
 
 type DramaScopeNavigatorProps = {
   projectTitle: string;
@@ -71,7 +71,7 @@ export function DramaScopeNavigator({
               <button
                 key={episode.id}
                 className={
-                  scope === "episode"
+                  scope !== "global"
                   && selectedEpisodeId === episode.id
                     ? "active"
                     : ""
@@ -97,33 +97,35 @@ export function DramaScopeNavigator({
         </div>
       </section>
 
-      <section className="drama-scope-nav-section drama-scope-stage-list">
-        <div className="drama-scope-nav-label">
-          <span>制作阶段</span>
-          <small>{activeStage}</small>
-        </div>
-        {dramaStages.map((stage) => {
-          const Icon = stageIcon(stage.id);
-          return (
-            <button
-              key={stage.id}
-              className={
-                scope === "stage" && activeStage === stage.id
-                  ? "active"
-                  : ""
-              }
-              type="button"
-              onClick={() => onStage(stage.id)}
-            >
-              <Icon size={14} />
-              <span>
-                <strong>{stage.label}</strong>
-                <small>{stage.deliverable}</small>
-              </span>
-            </button>
-          );
-        })}
-      </section>
+      {scope !== "global" && (
+        <section className="drama-scope-nav-section drama-scope-stage-list">
+          <div className="drama-scope-nav-label">
+            <span>制作阶段</span>
+            <small>{dramaStages.length}</small>
+          </div>
+          {dramaStages.map((stage) => {
+            const Icon = stageIcon(stage.id);
+            return (
+              <button
+                key={stage.id}
+                className={
+                  activeStage === stage.id
+                    ? "active"
+                    : ""
+                }
+                type="button"
+                onClick={() => onStage(stage.id)}
+              >
+                <Icon size={14} />
+                <span>
+                  <strong>{stage.label}</strong>
+                  <small>{stage.deliverable}</small>
+                </span>
+              </button>
+            );
+          })}
+        </section>
+      )}
     </aside>
   );
 }

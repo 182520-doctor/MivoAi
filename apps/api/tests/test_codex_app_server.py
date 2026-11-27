@@ -7,6 +7,7 @@ from app.adapters.codex.app_server import (
     CodexAppServerClient,
     _subprocess_startup_options,
 )
+from app.adapters.codex.runtime import codex_runtime_signature
 
 
 def test_subprocess_startup_hides_windows_console(monkeypatch) -> None:
@@ -155,3 +156,69 @@ def test_start_fails_with_actionable_error_when_host_is_missing(tmp_path) -> Non
 
     with pytest.raises(Exception, match="codex-code-mode-host"):
         asyncio.run(client.start())
+
+
+def test_runtime_signature_changes_when_model_configuration_changes(tmp_path) -> None:
+    config = tmp_path / "config.toml"
+    catalog = tmp_path / "models.json"
+    config.write_text(
+        'model = "model-a"\nmodel_catalog_json = "models.json"\n',
+        encoding="utf-8",
+    )
+    catalog.write_text('{"models":[{"slug":"model-a"}]}', encoding="utf-8")
+    first = codex_runtime_signature(tmp_path)
+
+    config.write_text(
+        'model = "model-b"\nmodel_catalog_json = "models.json"\n',
+        encoding="utf-8",
+    )
+    second = codex_runtime_signature(tmp_path)
+
+    assert first != second
+
+
+def test_start_restarts_app_server_when_runtime_signature_changes(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    binary = tmp_path / "codex.exe"
+    binary.touch()
+    (tmp_path / "codex-code-mode-host.exe").touch()
+    client = CodexAppServerClient(
+        binary,
+        tmp_path / "workspace",
+        tmp_path / "protocol.log",
+        protocol_logging_enabled=False,
+    )
+    client.process = MagicMock(returncode=None)
+    client._runtime_signature = "old-runtime"
+    monkeypatch.setattr(client, "runtime_signature", lambda: "new-runtime")
+
+    process = MagicMock(returncode=None)
+    process.wait = AsyncMock()
+    spawn = AsyncMock(return_value=process)
+    monkeypatch.setattr(
+        "app.adapters.codex.app_server.asyncio.create_subprocess_exec",
+        spawn,
+    )
+    stop = AsyncMock(side_effect=lambda: setattr(client, "process", None))
+    monkeypatch.setattr(client, "stop", stop)
+    monkeypatch.setattr(client, "_read_stdout", AsyncMock())
+    monkeypatch.setattr(client, "_read_stderr", AsyncMock())
+    monkeypatch.setattr(client, "notify", AsyncMock())
+    monkeypatch.setattr(
+        client,
+        "request",
+        AsyncMock(
+            side_effect=[
+                {"userAgent": "codex-test"},
+                {"account": None, "requiresOpenaiAuth": False},
+            ]
+        ),
+    )
+
+    asyncio.run(client.start())
+
+    stop.assert_awaited_once()
+    spawn.assert_awaited_once()
+    assert client._runtime_signature == "new-runtime"

@@ -27,6 +27,7 @@ class ConversationRepository:
             thread_id=row["codex_thread_id"],
             status=row["status"],
             tool_runtime_version=row["tool_runtime_version"],
+            runtime_signature=row["agent_runtime_signature"] or "",
             workspace_path=row["workspace_path"],
             project_id=row["project_id"],
             episode_id=row["episode_id"],
@@ -89,7 +90,8 @@ class ConversationRepository:
                     )
                 )
                 SELECT id, title, codex_thread_id, status,
-                       tool_runtime_version, workspace_path,
+                       tool_runtime_version, agent_runtime_signature,
+                       workspace_path,
                        project_id, episode_id, scope,
                        message_count, last_activity_at
                 FROM thread_rows
@@ -106,7 +108,8 @@ class ConversationRepository:
             row = connection.execute(
                 """
                 SELECT id, title, codex_thread_id, status,
-                       tool_runtime_version, workspace_path,
+                       tool_runtime_version, agent_runtime_signature,
+                       workspace_path,
                        project_id, episode_id, scope,
                        (
                            SELECT COUNT(*)
@@ -171,6 +174,7 @@ class ConversationRepository:
         thread_id: str,
         title: str,
         tool_runtime_version: int = 0,
+        runtime_signature: str = "",
     ) -> None:
         with self._database.transaction() as connection:
             connection.execute(
@@ -178,10 +182,17 @@ class ConversationRepository:
                 UPDATE sessions
                 SET codex_thread_id = ?, title = ?,
                     tool_runtime_version = ?,
+                    agent_runtime_signature = ?,
                     updated_at = CURRENT_TIMESTAMP
                 WHERE id = ?
                 """,
-                (thread_id, title, tool_runtime_version, conversation_id),
+                (
+                    thread_id,
+                    title,
+                    tool_runtime_version,
+                    runtime_signature,
+                    conversation_id,
+                ),
             )
             connection.execute(
                 "UPDATE conversations SET thread = ?, title = ? WHERE id = ?",

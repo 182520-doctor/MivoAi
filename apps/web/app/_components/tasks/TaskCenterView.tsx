@@ -129,16 +129,14 @@ export function TaskCenterView() {
 
   async function retryVisibleFailures() {
     const failedIds = visibleTasks
-      .filter((task) =>
-        ["failed", "error", "canceled"].includes(task.status),
-      )
+      .filter((task) => ["failed", "error", "canceled"].includes(task.status))
       .slice(0, 20)
       .map((task) => task.id);
     if (!failedIds.length) return;
     if (
       !window.confirm(
-        `将重试当前筛选中的 ${failedIds.length} 个失败任务，`
-        + "可能重新占用模型或 GPU，是否继续？",
+        `将重试当前筛选中的 ${failedIds.length} 个失败任务，` +
+          "可能重新占用模型或 GPU，是否继续？",
       )
     ) {
       return;
@@ -149,9 +147,9 @@ export function TaskCenterView() {
       const result = await retryMediaTasks(failedIds);
       if (result.failures.length) {
         setError(
-          `${result.tasks.length} 个任务已重新提交，`
-          + `${result.failures.length} 个失败：`
-          + result.failures[0].error,
+          `${result.tasks.length} 个任务已重新提交，` +
+            `${result.failures.length} 个失败：` +
+            result.failures[0].error,
         );
       }
       await refresh(true);
@@ -164,7 +162,23 @@ export function TaskCenterView() {
 
   return (
     <main className="workbench-page task-center-page">
-      <h1 className="visually-hidden">任务中心</h1>
+      <header className="page-heading compact workbench-page-heading">
+        <div>
+          <span className="eyebrow">生产运行</span>
+          <h1>任务中心</h1>
+          <p>
+            跟踪排队、执行与失败任务，查看真实模型和结果素材；失败任务可以保留原参数重新提交。
+          </p>
+        </div>
+        <div className="heading-status">
+          <span className="status-chip">{counts.all} 个媒体任务</span>
+          <span
+            className={`status-chip ${counts.active ? "warning" : "ready"}`}
+          >
+            {counts.active ? `${counts.active} 个执行中` : "队列空闲"}
+          </span>
+        </div>
+      </header>
       <section className="task-filter-bar task-center-filters">
         <div>
           {filters.map(({ id, label, icon: Icon }) => (
@@ -207,10 +221,7 @@ export function TaskCenterView() {
             disabled={batchRetrying || counts.failed === 0}
             onClick={() => void retryVisibleFailures()}
           >
-            <RotateCcw
-              className={batchRetrying ? "spin" : ""}
-              size={15}
-            />
+            <RotateCcw className={batchRetrying ? "spin" : ""} size={15} />
             批量重试失败
           </button>
         </div>
@@ -289,9 +300,7 @@ function TaskRow({
             <code>{task.origin.episodeId?.slice(0, 8)}</code>
             <span>运行</span>
             <code>{task.origin.productionRunId?.slice(0, 8)}</code>
-            <span>
-              {task.origin.targetType === "shot" ? "镜头" : "资产"}
-            </span>
+            <span>{task.origin.targetType === "shot" ? "镜头" : "资产"}</span>
             <code>{task.origin.targetId?.slice(0, 8)}</code>
             <span>{task.origin.slot}</span>
           </div>
@@ -309,17 +318,19 @@ function TaskRow({
       </div>
       {task.resultAssetIds.length > 0 && (
         <div className="task-result-preview">
-          {task.resultAssetIds.slice(0, 3).map((assetId) =>
-            task.taskType === "video_generation" ? (
-              <video key={assetId} src={mediaAssetUrl(assetId)} muted />
-            ) : (
-              <img
-                key={assetId}
-                src={mediaAssetUrl(assetId)}
-                alt="任务结果"
-              />
-            ),
-          )}
+          {task.resultAssetIds
+            .slice(0, 3)
+            .map((assetId) =>
+              task.taskType === "video_generation" ? (
+                <video key={assetId} src={mediaAssetUrl(assetId)} muted />
+              ) : (
+                <img
+                  key={assetId}
+                  src={mediaAssetUrl(assetId)}
+                  alt="任务结果"
+                />
+              ),
+            )}
         </div>
       )}
       {["failed", "error", "canceled"].includes(task.status) &&
@@ -372,15 +383,17 @@ function taskStatus(status: string) {
 }
 
 function taskTypeLabel(taskType: string) {
-  return {
-    image_generation: "图片生成",
-    image_processing: "图片处理",
-    video_generation: "视频生成",
-    video_processing: "视频处理",
-    audio_processing: "音频处理",
-    transcription: "语音转字幕",
-    text: "Agent 对话",
-  }[taskType] ?? taskType;
+  return (
+    {
+      image_generation: "图片生成",
+      image_processing: "图片处理",
+      video_generation: "视频生成",
+      video_processing: "视频处理",
+      audio_processing: "音频处理",
+      transcription: "语音转字幕",
+      text: "Agent 对话",
+    }[taskType] ?? taskType
+  );
 }
 
 function displayTaskPrompt(prompt: string) {

@@ -243,6 +243,7 @@ class ConversationService:
                 await self._run_http_model_turn(command, active_turn, active_turn.route)
                 return
             await self._codex.start()
+            active_turn.runtime_signature = self._codex.runtime_signature()
             workspace_path = active_turn.workspace_path or conversation.workspace_path
             if self._workspace_manager and not active_turn.project_id:
                 workspace = self._workspace_manager.ensure(conversation.id)
@@ -258,21 +259,29 @@ class ConversationService:
                 if self._workspace_manager
                 else None
             )
+            runtime_changed = (
+                conversation.runtime_signature != active_turn.runtime_signature
+            )
             project_thread = (
                 self._creative_projects.get_thread(active_turn.project_id)
-                if active_turn.project_id and self._creative_projects
+                if (
+                    not runtime_changed
+                    and active_turn.project_id
+                    and self._creative_projects
+                )
                 else None
             )
-            needs_tool_thread = (
+            needs_new_thread = (
                 not conversation.thread_id
                 or conversation.tool_runtime_version < TOOL_RUNTIME_VERSION
+                or runtime_changed
             )
             thread_id = project_thread or (
                 await self._codex.create_thread(
                     cwd=workspace,
                     shared_roots=shared_roots,
                 )
-                if needs_tool_thread
+                if needs_new_thread
                 else conversation.thread_id
             )
             assert thread_id
@@ -282,12 +291,13 @@ class ConversationService:
                 if not conversation.thread_id
                 else conversation.title
             )
-            if needs_tool_thread:
+            if needs_new_thread:
                 self._repository.attach_thread(
                     conversation.id,
                     thread_id,
                     title,
                     tool_runtime_version=TOOL_RUNTIME_VERSION,
+                    runtime_signature=active_turn.runtime_signature,
                 )
             if active_turn.project_id and self._creative_projects:
                 self._creative_projects.attach_thread(
@@ -313,6 +323,7 @@ class ConversationService:
                         active_turn.thread_id,
                         title,
                         tool_runtime_version=TOOL_RUNTIME_VERSION,
+                        runtime_signature=active_turn.runtime_signature,
                     )
                 if event["type"] == "delta" and event.get("text"):
                     self._repository.append_assistant_content(

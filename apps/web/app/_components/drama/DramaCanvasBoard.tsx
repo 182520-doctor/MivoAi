@@ -4,6 +4,7 @@ import {
   ArrowRight,
   Bot,
   CheckCircle2,
+  ChevronRight,
   CircleAlert,
   Clapperboard,
   FileText,
@@ -30,25 +31,18 @@ import {
 } from "react";
 import type {
   DramaControlRoom,
-  DramaDocument,
   DramaEntityKind,
   DramaEpisode,
   DramaEpisodeAudit,
   DramaEntity,
-  DramaProductionRole,
   DramaSeriesEpisode,
   DramaSeriesOverview,
-  DramaShot,
-  DramaStageGate,
 } from "../../_features/drama/types";
 import {
   loadDramaEpisodeAudit,
   loadDramaSeries,
 } from "../../_features/drama/api";
-import {
-  dramaStages,
-  type DramaStage,
-} from "../../_features/drama/productionStages";
+import { dramaStages } from "../../_features/drama/productionStages";
 import { useDramaAssets } from "../../_features/drama/useDramaAssets";
 import { useDramaControlRoom } from "../../_features/drama/useDramaControlRoom";
 import { useDramaDocuments } from "../../_features/drama/useDramaDocuments";
@@ -61,9 +55,9 @@ type DramaCanvasBoardProps = {
   projectTitle: string;
   visualStyle: string;
   activeStage: string;
-  scope: "global" | "episode" | "stage";
+  scope: "global" | "episode";
   selectedEpisodeId: string | null;
-  onScopeChange: (scope: "global" | "episode" | "stage") => void;
+  onScopeChange: (scope: "global" | "episode") => void;
   onSelectEpisode: (episodeId: string) => void;
   onOpenStage: (stage: string) => void;
   onOpenShot: (shotId: string, stage: string) => void;
@@ -126,11 +120,6 @@ const CanvasInspectionContext = createContext<
 const CanvasLayoutContext = createContext("");
 
 type DragOffset = { x: number; y: number };
-type StageArtifactStatus = {
-  label: string;
-  value: string;
-  ready: boolean;
-};
 type CanvasConnectionPath = {
   id: string;
   path: string;
@@ -170,6 +159,7 @@ export function DramaCanvasBoard({
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const layoutFrameRef = useRef<number | null>(null);
   const fittedRef = useRef(false);
+  const fittedViewportWidthRef = useRef(0);
   const [connectionPaths, setConnectionPaths] = useState<
     CanvasConnectionPath[]
   >([]);
@@ -226,11 +216,48 @@ export function DramaCanvasBoard({
     production.episodes.find((episode) => episode.id === selectedEpisodeId) ??
     production.episodes[0] ??
     null;
-  const currentStage =
-    dramaStages.find((stage) => stage.id === activeStage) ?? dramaStages[0];
-  const currentGate = control.controlRoom?.gates.find(
-    (gate) => gate.stage === activeStage,
-  );
+  const episodeShots =
+    selectedEpisode?.scenes.flatMap((scene) => scene.shots) ?? [];
+  const scopeMetrics =
+    scope === "global"
+      ? [
+          [`${documents.documents.length}`, "文档"],
+          [`${assets.entities.length}`, "资产"],
+          [`${shots.length}`, "镜头"],
+          [`${readyShots}`, "视频"],
+        ]
+      : [
+          [`${selectedEpisode?.scenes.length ?? 0}`, "场次"],
+          [`${episodeShots.length}`, "镜头"],
+          [
+            `${episodeShots.filter((shot) => shot.firstFrameAssetId).length}`,
+            "关键帧",
+          ],
+          [
+            `${episodeShots.filter((shot) => shot.videoAssetId).length}`,
+            "视频",
+          ],
+          [
+            `${episodeShots.filter((shot) => shot.status === "approved").length}`,
+            "已审",
+          ],
+        ];
+  const episodeNumberLabel = `第 ${selectedEpisode?.episodeNumber ?? "-"} 集`;
+  const specificEpisodeTitle =
+    selectedEpisode?.title
+      .replace(
+        new RegExp(
+          `^第\\s*${selectedEpisode.episodeNumber}\\s*集\\s*[·:：\\-—]*\\s*`,
+        ),
+        "",
+      )
+      .trim() ?? "";
+  const scopeTitle =
+    scope === "global"
+      ? `${projectTitle} · 项目总览`
+      : specificEpisodeTitle
+        ? `${episodeNumberLabel} · ${specificEpisodeTitle}`
+        : episodeNumberLabel;
 
   useEffect(() => {
     onScopeContextChange({
@@ -319,15 +346,57 @@ export function DramaCanvasBoard({
   }, [scheduleConnectionUpdate]);
 
   useEffect(() => {
-    if (fittedRef.current) return;
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const width = Math.round(entry.contentRect.width);
+      if (
+        width < 240 ||
+        Math.abs(width - fittedViewportWidthRef.current) < 40
+      ) {
+        return;
+      }
+      fittedViewportWidthRef.current = width;
+      window.requestAnimationFrame(() => {
+        fitCanvasToViewport();
+        fittedRef.current = true;
+      });
+    });
+    observer.observe(viewport);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const contentCount =
+      documents.documents.length +
+      production.episodes.length +
+      assets.entities.length;
+    if (
+      scope !== "global" ||
+      fittedRef.current ||
+      documents.loading ||
+      production.loading ||
+      assets.loading ||
+      contentCount === 0
+    ) {
+      return;
+    }
     const frame = window.requestAnimationFrame(() => {
       fitCanvasToViewport();
       fittedRef.current = true;
     });
     return () => window.cancelAnimationFrame(frame);
-    // Fit once after the initial scene has been measured.
+    // Fit once after both the viewport and initial project content are measured.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [
+    scope,
+    documents.loading,
+    production.loading,
+    assets.loading,
+    documents.documents.length,
+    production.episodes.length,
+    assets.entities.length,
+  ]);
   function changeZoom(delta: number) {
     setView((current) => ({
       ...current,
@@ -384,13 +453,16 @@ export function DramaCanvasBoard({
     const height = viewport.clientHeight - 28;
     const contentWidth = Math.max(1, scene.offsetWidth);
     const contentHeight = Math.max(1, scene.offsetHeight);
+    const compactOverview = viewport.clientWidth < 1100;
     const zoom = Math.max(
-      0.45,
+      compactOverview ? 0.7 : 0.45,
       Math.min(1.15, width / contentWidth, height / contentHeight),
     );
     setView({
       zoom,
-      x: Math.max(14, (viewport.clientWidth - contentWidth * zoom) / 2),
+      x: compactOverview
+        ? 14
+        : Math.max(14, (viewport.clientWidth - contentWidth * zoom) / 2),
       y: Math.max(14, (viewport.clientHeight - contentHeight * zoom) / 2),
     });
   }
@@ -437,37 +509,38 @@ export function DramaCanvasBoard({
       }`}
     >
       <header className="drama-canvas-toolbar">
-        <div className="drama-canvas-metrics">
-          <span>
-            <strong>{documents.documents.length}</strong> 份文档
-          </span>
-          <span>
-            <strong>{assets.entities.length}</strong> 个资产
-          </span>
-          <span>
-            <strong>{shots.length}</strong> 个镜头
-          </span>
-          <span>
-            <strong>{readyShots}</strong> 条视频
-          </span>
+        <div className="drama-canvas-context">
+          <nav className="drama-canvas-breadcrumb" aria-label="制作范围">
+            <button type="button" onClick={() => onScopeChange("global")}>
+              项目总览
+            </button>
+            {scope !== "global" && selectedEpisode && (
+              <>
+                <ChevronRight size={12} />
+                <button
+                  type="button"
+                  onClick={() => {
+                    onSelectEpisode(selectedEpisode.id);
+                    onScopeChange("episode");
+                  }}
+                >
+                  第 {selectedEpisode.episodeNumber} 集
+                </button>
+              </>
+            )}
+          </nav>
+          <strong>{scopeTitle}</strong>
+          {scope === "global" && (
+            <small>先看项目结构、分集进度与下一步</small>
+          )}
         </div>
-        <div className="drama-canvas-actions">
-          <div className="drama-scope-switch">
-            {(["global", "episode", "stage"] as const).map((item) => (
-              <button
-                key={item}
-                className={scope === item ? "active" : ""}
-                type="button"
-                onClick={() => onScopeChange(item)}
-              >
-                {item === "global"
-                  ? "全局"
-                  : item === "episode"
-                    ? "分集"
-                    : "阶段"}
-              </button>
-            ))}
-          </div>
+        <div className="drama-canvas-metrics">
+          {scopeMetrics.map(([value, label]) => (
+            <span key={label}>
+              <strong>{value}</strong>
+              {label}
+            </span>
+          ))}
         </div>
       </header>
 
@@ -933,32 +1006,15 @@ export function DramaCanvasBoard({
             </aside>
           )}
         </>
-      ) : scope === "episode" ? (
+      ) : (
         <EpisodeScopeBoard
-          episodes={production.episodes}
           selectedEpisode={selectedEpisode}
           controlRoom={control.controlRoom}
           documents={documents.documents}
           assetCount={assets.entities.length}
-          onSelectEpisode={onSelectEpisode}
           onOpenStage={onOpenStage}
           onOpenAgent={onOpenAgent}
           refreshToken={refreshToken}
-        />
-      ) : (
-        <StageScopeBoard
-          stage={currentStage}
-          gate={currentGate}
-          posts={control.controlRoom?.roles ?? []}
-          artifacts={buildStageArtifacts(
-            currentStage,
-            documents.documents,
-            production.episodes,
-            assets.entities,
-            shots,
-          )}
-          onOpenStage={onOpenStage}
-          onOpenAgent={onOpenAgent}
         />
       )}
 
@@ -1001,22 +1057,18 @@ export function DramaCanvasBoard({
 }
 
 function EpisodeScopeBoard({
-  episodes,
   selectedEpisode,
   controlRoom,
   documents,
   assetCount,
-  onSelectEpisode,
   onOpenStage,
   onOpenAgent,
   refreshToken,
 }: {
-  episodes: DramaEpisode[];
   selectedEpisode: DramaEpisode | null;
   controlRoom: DramaControlRoom | null;
   documents: Array<{ kind: string; status: string }>;
   assetCount: number;
-  onSelectEpisode: (episodeId: string) => void;
   onOpenStage: (stage: string) => void;
   onOpenAgent: (
     context?: string,
@@ -1075,6 +1127,13 @@ function EpisodeScopeBoard({
     ["对白", plan?.dialogueRequirements.join("；") || "待检查"],
   ];
   const planGaps = planFields.filter(([, value]) => value.startsWith("待"));
+  const primaryPlanLabels = new Set(["时间", "地点", "人物", "故事"]);
+  const primaryPlanFields = planFields.filter(([label]) =>
+    primaryPlanLabels.has(label),
+  );
+  const secondaryPlanFields = planFields.filter(
+    ([label]) => !primaryPlanLabels.has(label),
+  );
   const sceneContracts = plan?.sceneContracts ?? [];
   const episodePlan = controlRoom?.episodes.find(
     (item) => item.id === selectedEpisode.id,
@@ -1083,7 +1142,7 @@ function EpisodeScopeBoard({
     documents.some(
       (document) => document.kind === kind && document.status === "approved",
     );
-  const visibleIssues = audit?.issues.slice(0, 3) ?? [];
+  const visibleIssues = audit?.issues.slice(0, 2) ?? [];
   const auditTone = audit?.errorCount
     ? "failed"
     : audit?.warningCount
@@ -1091,46 +1150,21 @@ function EpisodeScopeBoard({
       : "passed";
 
   return (
-    <div className="drama-scope-board drama-episode-scope">
-      <aside className="drama-scope-list">
-        <header>
-          <span>分集</span>
-          <small>{episodes.length} 集</small>
-        </header>
-        {episodes.map((episode) => (
-          <button
-            key={episode.id}
-            className={episode.id === selectedEpisode.id ? "active" : ""}
-            type="button"
-            onClick={() => onSelectEpisode(episode.id)}
-          >
-            <span>{String(episode.episodeNumber).padStart(2, "0")}</span>
-            <div>
-              <strong>{episode.title}</strong>
-              <small>
-                {episode.scenes.length} 场 ·{" "}
-                {episode.scenes.reduce(
-                  (count, scene) => count + scene.shots.length,
-                  0,
-                )}{" "}
-                镜
-              </small>
-            </div>
-          </button>
-        ))}
-      </aside>
-
+    <div className="drama-scope-board drama-episode-scope compact">
       <section className="drama-scope-main">
-        <header>
+        <div className="drama-episode-lead">
+          <p>{selectedEpisode.synopsis || "尚未填写本集梗概"}</p>
           <div>
-            <span>第 {selectedEpisode.episodeNumber} 集 · 分集制作范围</span>
-            <h3>{selectedEpisode.title}</h3>
-            <p>{selectedEpisode.synopsis || "尚未填写本集梗概"}</p>
-          </div>
-          <div>
-            <em className={episodePlan?.planComplete ? "ready" : ""}>
-              {episodePlan?.planComplete ? "计划完整" : "计划待补全"}
-            </em>
+            <span className={episodePlan?.planComplete ? "ready" : ""}>
+              {episodePlan?.planComplete
+                ? "本集计划完整"
+                : `本集计划还缺 ${planGaps.length} 项`}
+            </span>
+            {plan?.continuityRisks.length ? (
+              <span className="risk">
+                {plan.continuityRisks.length} 项连续性风险
+              </span>
+            ) : null}
             <button
               type="button"
               onClick={() =>
@@ -1149,95 +1183,98 @@ function EpisodeScopeBoard({
               <Bot size={14} /> Agent 检查本集
             </button>
           </div>
-        </header>
-
-        <div className="drama-episode-plan-fields">
-          {planFields.map(([label, value]) => (
-            <div key={label}>
-              <span>{label}</span>
-              <strong>{value}</strong>
-            </div>
-          ))}
         </div>
 
-        <details className="drama-scene-contracts">
-          <summary>
-            <span>场景创作契约</span>
-            <small>
-              {sceneContracts.length
-                ? `${sceneContracts.length} 场已结构化`
-                : "待 Agent 建立目标、障碍、转折、潜台词与表演策略"}
-            </small>
-          </summary>
-          {sceneContracts.length ? (
-            <div>
-              {sceneContracts.map((contract) => (
-                <article key={contract.sceneNumber}>
-                  <header>
+        <div className="drama-episode-overview-grid">
+          <section className="drama-episode-plan-block">
+            <header>
+              <strong>本集拆解</strong>
+              <em className={planGaps.length ? "" : "ready"}>
+                {planGaps.length
+                  ? `${planGaps.length} 项待补`
+                  : "关键字段已填写"}
+              </em>
+            </header>
+            <div className="drama-episode-plan-fields primary">
+              {primaryPlanFields.map(([label, value]) => (
+                <div key={label}>
+                  <span>{label}</span>
+                  <strong>{value}</strong>
+                </div>
+              ))}
+            </div>
+            <details className="drama-episode-plan-more">
+              <summary>更多拆解：内外景、场景、画面与对白</summary>
+              <div className="drama-episode-plan-fields secondary">
+                {secondaryPlanFields.map(([label, value]) => (
+                  <div key={label}>
+                    <span>{label}</span>
+                    <strong>{value}</strong>
+                  </div>
+                ))}
+              </div>
+            </details>
+          </section>
+
+          <section className="drama-episode-contract-block">
+            <header>
+              <strong>场景与连续性</strong>
+              <em className={sceneContracts.length ? "ready" : ""}>
+                {sceneContracts.length
+                  ? `${sceneContracts.length} 场已结构化`
+                  : "场景契约待建立"}
+              </em>
+            </header>
+            {sceneContracts.length ? (
+              <div className="drama-episode-contract-preview">
+                {sceneContracts.slice(0, 3).map((contract) => (
+                  <article key={contract.sceneNumber}>
                     <strong>
                       场 {contract.sceneNumber}
                       {contract.title ? ` · ${contract.title}` : ""}
                     </strong>
-                    <em>
+                    <span>
                       {contract.valueIn || "起始价值"} →{" "}
                       {contract.valueOut || "退出价值"}
-                    </em>
-                  </header>
-                  <dl>
-                    <div>
-                      <dt>人物目标</dt>
-                      <dd>
-                        {contract.characterObjectives.join("；") || "待补"}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>障碍 / 战术</dt>
-                      <dd>
-                        {[contract.obstacle, ...contract.tactics]
-                          .filter(Boolean)
-                          .join("；") || "待补"}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>转折 / 潜台词</dt>
-                      <dd>
-                        {[contract.turn, contract.subtext]
-                          .filter(Boolean)
-                          .join("；") || "待补"}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>表演 / 视听</dt>
-                      <dd>
-                        {[
-                          contract.performanceNotes,
-                          contract.visualStrategy,
-                          contract.soundNotes,
-                        ]
-                          .filter(Boolean)
-                          .join("；") || "待补"}
-                      </dd>
-                    </div>
-                  </dl>
-                </article>
-              ))}
-            </div>
-          ) : (
+                    </span>
+                    <small>
+                      {contract.characterObjectives.join("；") ||
+                        contract.obstacle ||
+                        "待补人物目标与障碍"}
+                    </small>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p>
+                还没有逐场目标、障碍、转折与表演策略。Agent
+                建立后才能稳定生成资产和镜头。
+              </p>
+            )}
+            {plan?.continuityRisks.length ? (
+              <div className="drama-episode-risk-list">
+                <span>连续性风险</span>
+                {plan.continuityRisks.slice(0, 3).map((risk) => (
+                  <small key={risk}>{risk}</small>
+                ))}
+              </div>
+            ) : null}
             <button
               type="button"
               onClick={() =>
                 onOpenAgent(
-                  `请为第 ${selectedEpisode.episodeNumber} 集建立逐场创作契约。` +
+                  `请为第 ${selectedEpisode.episodeNumber} 集建立或完善逐场创作契约。` +
                     "读取专业故事规范，为每场写清进入价值、人物目标、障碍、战术、节拍、转折、退出价值、潜台词、声台形表、视觉与声音策略。" +
                     "完成后调用 zaojing_audit_drama_episode 自审并修复问题，再提交给我审核。",
                   "replace",
                 )
               }
             >
-              <Bot size={14} /> 让 Agent 建立场景契约
+              <Bot size={14} />
+              {sceneContracts.length ? "让 Agent 完善场景契约" : "让 Agent 建立场景契约"}
             </button>
-          )}
-        </details>
+          </section>
+        </div>
 
         <section className={`drama-episode-audit ${auditTone}`}>
           <header>
@@ -1286,9 +1323,11 @@ function EpisodeScopeBoard({
           </header>
           {visibleIssues.length > 0 && (
             <div className="drama-episode-audit-issues">
-              {visibleIssues.map((issue) => (
+              {visibleIssues.map((issue, index) => (
                 <span
-                  key={`${issue.code}-${issue.shotId ?? issue.entityId ?? ""}`}
+                  key={`${issue.code}-${
+                    issue.shotId ?? issue.entityId ?? "episode"
+                  }-${index}`}
                   className={issue.severity}
                 >
                   {issue.severity === "error"
@@ -1342,177 +1381,6 @@ function EpisodeScopeBoard({
                     <ArrowRight size={13} />
                   )}
                 </button>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      <aside className="drama-scope-summary">
-        <span>本集当前状态</span>
-        <div>
-          <strong>{selectedEpisode.scenes.length}</strong>
-          <small>场次</small>
-        </div>
-        <div>
-          <strong>{shots.length}</strong>
-          <small>镜头</small>
-        </div>
-        <div>
-          <strong>
-            {shots.filter((shot) => shot.firstFrameAssetId).length}
-          </strong>
-          <small>首帧</small>
-        </div>
-        <div>
-          <strong>{shots.filter((shot) => shot.videoAssetId).length}</strong>
-          <small>视频</small>
-        </div>
-        <div>
-          <strong>{selectedEpisode.subtitleCues.length}</strong>
-          <small>字幕 cue</small>
-        </div>
-        <p>
-          {plan?.continuityRisks.length
-            ? `连续性风险：${plan.continuityRisks.join("；")}`
-            : "暂未登记连续性风险"}
-        </p>
-      </aside>
-    </div>
-  );
-}
-
-function StageScopeBoard({
-  stage,
-  gate,
-  posts,
-  artifacts,
-  onOpenStage,
-  onOpenAgent,
-}: {
-  stage: DramaStage;
-  gate?: DramaStageGate;
-  posts: DramaProductionRole[];
-  artifacts: StageArtifactStatus[];
-  onOpenStage: (stage: string) => void;
-  onOpenAgent: (context?: string) => void;
-}) {
-  const owners =
-    posts.filter((post) => gate?.ownerRoleIds.includes(post.id)) ?? [];
-  const index = dramaStages.findIndex((item) => item.id === stage.id);
-  const previous = index > 0 ? dramaStages[index - 1] : null;
-  const Icon = stage.icon;
-  const readyArtifacts = artifacts.filter((artifact) => artifact.ready).length;
-  const missingArtifacts = artifacts.filter((artifact) => !artifact.ready);
-
-  return (
-    <div className="drama-scope-board drama-stage-scope">
-      <section className="drama-stage-scope-main">
-        <header className="drama-stage-scope-header">
-          <div>
-            <span>
-              <Icon size={17} /> {stage.label}
-            </span>
-            <p>{stage.detail}</p>
-          </div>
-          <div className="drama-stage-scope-actions">
-            <em className={gate?.status ?? "pending"}>
-              {gate?.label ?? "尚未审核"}
-            </em>
-            <button
-              type="button"
-              onClick={() =>
-                onOpenAgent(
-                  `当前范围是「${stage.label}」阶段。请读取阶段角色和审核门，` +
-                    `逐项确认输入、执行和审核，明确本阶段要交付：` +
-                    `${stage.artifacts.join("、")}。当前缺口：` +
-                    `${
-                      missingArtifacts.length
-                        ? missingArtifacts
-                            .map((item) => `${item.label} ${item.value}`)
-                            .join("；")
-                        : "无明确缺口，请复核质量门"
-                    }。先说明缺口，再继续。`,
-                )
-              }
-            >
-              <Bot size={14} />
-              Agent 补齐
-            </button>
-            <button
-              className="primary"
-              type="button"
-              onClick={() => onOpenStage(stage.id)}
-            >
-              进入制作
-              <ArrowRight size={14} />
-            </button>
-          </div>
-        </header>
-
-        <div className="drama-stage-scope-agent">
-          <span>本阶段任务</span>
-          <strong>{stage.agentAction}</strong>
-          <small>
-            {readyArtifacts} / {artifacts.length} 项产物就绪
-            {missingArtifacts.length
-              ? ` · 缺 ${missingArtifacts.map((item) => item.label).join("、")}`
-              : " · 可进入审核"}
-          </small>
-        </div>
-
-        <div className="drama-stage-scope-artifacts">
-          <span>
-            阶段明确产物
-            <small>
-              {readyArtifacts} / {artifacts.length} 已就绪
-            </small>
-          </span>
-          <div>
-            {artifacts.map((artifact) => (
-              <span
-                key={artifact.label}
-                className={artifact.ready ? "ready" : ""}
-              >
-                {artifact.ready ? (
-                  <CheckCircle2 size={13} />
-                ) : (
-                  <CircleAlert size={13} />
-                )}
-                <div>
-                  <strong>{artifact.label}</strong>
-                  <small>{artifact.value}</small>
-                </div>
-              </span>
-            ))}
-          </div>
-        </div>
-
-        <div className="drama-stage-scope-owners">
-          <div>
-            <span>负责角色</span>
-            <small>
-              {previous?.deliverable ?? "项目起点"} → {stage.deliverable}
-            </small>
-          </div>
-          <div>
-            {owners.map((role) => {
-              const review = gate?.latestReviews[role.id];
-              return (
-                <article
-                  key={role.id}
-                  className={review?.status ?? "pending"}
-                  title={role.checklist[0]}
-                >
-                  <strong>{role.title}</strong>
-                  <small>
-                    {review
-                      ? review.status === "passed"
-                        ? `已通过 · ${review.score}分`
-                        : "需检查"
-                      : "待审核"}
-                  </small>
-                </article>
               );
             })}
           </div>
@@ -1755,177 +1623,6 @@ function documentSummary(content: string | undefined) {
   const text = (content || "").replace(/\s+/g, " ").trim();
   if (!text) return "等待 Agent 或用户开始编写";
   return text.length > 88 ? `${text.slice(0, 88)}…` : text;
-}
-
-function buildStageArtifacts(
-  stage: DramaStage,
-  documents: DramaDocument[],
-  episodes: DramaEpisode[],
-  entities: DramaEntity[],
-  shots: DramaShot[],
-): StageArtifactStatus[] {
-  const documentKind = stage.id === "bible" ? "story_bible" : stage.id;
-  const document = documents.find((item) => item.kind === documentKind);
-  const documentValue = document
-    ? `v${document.version} · ${
-        document.status === "approved" ? "已审批" : "草稿"
-      }`
-    : "尚未创建";
-  if (stage.id === "brief" || stage.id === "bible" || stage.id === "script") {
-    return stage.artifacts.map((label) => ({
-      label,
-      value: documentValue,
-      ready: Boolean(
-        document &&
-        document.status === "approved" &&
-        document.content.trim().length > 20,
-      ),
-    }));
-  }
-  if (stage.id === "breakdown") {
-    const complete = (key: keyof NonNullable<DramaEpisode["plan"]>) =>
-      episodes.filter((episode) => {
-        const value = episode.plan?.[key];
-        return Array.isArray(value) ? value.length > 0 : Boolean(value);
-      }).length;
-    return [
-      artifact("逐集时间地点", complete("locations"), episodes.length),
-      artifact(
-        "人物与场景",
-        episodes.filter(
-          (episode) =>
-            episode.plan?.characters.length && episode.plan?.scenes.length,
-        ).length,
-        episodes.length,
-      ),
-      artifact("故事节拍", complete("storyBeats"), episodes.length),
-      artifact("画面检查", complete("visualRequirements"), episodes.length),
-      artifact("对白检查", complete("dialogueRequirements"), episodes.length),
-      artifact("连续性风险", complete("continuityRisks"), episodes.length),
-    ];
-  }
-  if (stage.id === "assets") {
-    const ofKind = (kind: DramaEntityKind) =>
-      entities.filter((entity) => entity.kind === kind);
-    const characters = ofKind("character");
-    const locations = ofKind("location");
-    return [
-      artifact(
-        "角色设定总表",
-        characters.filter(
-          (entity) => entity.assetSlots.character_sheet,
-        ).length,
-        characters.length,
-      ),
-      artifact(
-        "场景总图",
-        locations.filter((entity) => entity.assetSlots.master).length,
-        locations.length,
-      ),
-      artifact(
-        "内外景分图",
-        locations.filter(
-          (entity) => entity.assetSlots.interior || entity.assetSlots.exterior,
-        ).length,
-        locations.length,
-      ),
-      artifact(
-        "灯光参考",
-        locations.filter((entity) => entity.assetSlots.lighting_reference)
-          .length,
-        locations.length,
-      ),
-      artifact(
-        "道具与风格",
-        entities.filter(
-          (entity) =>
-            (entity.kind === "prop" && entity.assetSlots.hero) ||
-            (entity.kind === "style" && entity.assetSlots.moodboard),
-        ).length,
-        ofKind("prop").length + ofKind("style").length,
-      ),
-    ];
-  }
-  if (stage.id === "keyframes") {
-    return [
-      artifact(
-        "首帧",
-        shots.filter((shot) => shot.firstFrameAssetId).length,
-        shots.length,
-      ),
-      artifact(
-        "尾帧",
-        shots.filter((shot) => shot.lastFrameAssetId).length,
-        shots.length,
-      ),
-      artifact(
-        "九宫格连续帧",
-        shots.filter((shot) => shot.grid9AssetId).length,
-        shots.length,
-      ),
-      artifact(
-        "故事板",
-        shots.filter((shot) => shot.storyboardAssetId).length,
-        shots.length,
-      ),
-    ];
-  }
-  if (stage.id === "clips") {
-    const withVideo = shots.filter((shot) => shot.videoAssetId).length;
-    const withAudio = shots.filter((shot) => shot.audioAssetId).length;
-    const dialogueShots = shots.filter((shot) => shot.dialogue);
-    return [
-      artifact("镜头视频", withVideo, shots.length),
-      artifact(
-        "角色配音",
-        dialogueShots.filter((shot) => shot.audioAssetId).length,
-        dialogueShots.length,
-      ),
-      artifact("环境声与音效", withAudio, shots.length),
-      artifact(
-        "镜头审核",
-        shots.filter((shot) => shot.status === "approved").length,
-        shots.length,
-      ),
-    ];
-  }
-  const rendered = episodes.filter(
-    (episode) => episode.status === "rendered" && episode.exportAssetId,
-  ).length;
-  return [
-    artifact(
-      "镜头时间线",
-      shots.filter((shot) => shot.videoAssetId).length,
-      shots.length,
-    ),
-    artifact(
-      "字幕",
-      episodes.filter((episode) => episode.subtitleCues.length > 0).length,
-      episodes.length,
-    ),
-    artifact(
-      "音乐混音",
-      episodes.filter(
-        (episode) =>
-          episode.audioMix.musicAssetId || episode.audioMix.ambienceAssetId,
-      ).length,
-      episodes.length,
-    ),
-    artifact("转场与时间线", rendered, episodes.length),
-    artifact("成片导出", rendered, episodes.length),
-  ];
-}
-
-function artifact(
-  label: string,
-  current: number,
-  total: number,
-): StageArtifactStatus {
-  return {
-    label,
-    value: `${current} / ${total}`,
-    ready: total > 0 && current === total,
-  };
 }
 
 function episodeArtifactReady(

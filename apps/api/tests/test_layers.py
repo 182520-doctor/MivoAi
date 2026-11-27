@@ -11,7 +11,12 @@ def test_repository_persists_conversation_and_submission(tmp_path) -> None:
     repository = ConversationRepository(database)
 
     conversation = repository.create_conversation()
-    repository.attach_thread(conversation.id, "thread-1", "第一条创意")
+    repository.attach_thread(
+        conversation.id,
+        "thread-1",
+        "第一条创意",
+        runtime_signature="runtime-1",
+    )
     repository.start_submission("message-1", conversation.id)
     turn = repository.create_turn_with_messages(
         conversation.id, "message-1", "请写一个 Markdown 表格"
@@ -32,6 +37,7 @@ def test_repository_persists_conversation_and_submission(tmp_path) -> None:
 
     assert restored is not None
     assert restored.thread_id == "thread-1"
+    assert restored.runtime_signature == "runtime-1"
     assert restored.title == "第一条创意"
     assert [message.role for message in messages] == ["user", "assistant"]
     assert messages[0].content == "请写一个 Markdown 表格"

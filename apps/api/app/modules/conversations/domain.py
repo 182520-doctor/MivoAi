@@ -16,6 +16,7 @@ class Conversation:
     thread_id: str | None
     status: str = "idle"
     tool_runtime_version: int = 0
+    runtime_signature: str = ""
     workspace_path: str | None = None
     project_id: str | None = None
     episode_id: str | None = None

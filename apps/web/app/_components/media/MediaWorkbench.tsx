@@ -36,12 +36,13 @@ export function MediaWorkbench() {
   const capabilityLabel =
     capabilities.find((item) => item.id === generation.mode)?.label ?? "图片";
   const isWorkflowModel = generation.model?.kind === "comfy_workflow";
-  const missingRequired = generation.formParameters.some((parameter) => {
-    if (parameter.type === "assets") return false;
-    if (!parameter.required) return false;
-    const modelValue = generation.parameterValues[parameter.key];
-    return modelValue == null || modelValue === "";
-  }) ||
+  const missingRequired =
+    generation.formParameters.some((parameter) => {
+      if (parameter.type === "assets") return false;
+      if (!parameter.required) return false;
+      const modelValue = generation.parameterValues[parameter.key];
+      return modelValue == null || modelValue === "";
+    }) ||
     generation.referenceInputs.some(
       (parameter) =>
         parameter.required &&
@@ -51,7 +52,20 @@ export function MediaWorkbench() {
 
   return (
     <main className="workbench-page">
-      <h1 className="visually-hidden">多模态创作工作台</h1>
+      <header className="page-heading compact workbench-page-heading">
+        <div>
+          <span className="eyebrow">媒体生产</span>
+          <h1>多模态创作</h1>
+          <p>
+            在一个工作台里配置提示词、参考素材与 ComfyUI
+            参数，生成结果会同步进入素材库。
+          </p>
+        </div>
+        <div className="heading-status">
+          <span className="status-chip ready">ComfyUI 工作流</span>
+          <span className="status-chip">结果持久化</span>
+        </div>
+      </header>
       <section className="media-layout">
         <aside className="workbench-panel media-controls">
           <div className="panel-heading">
@@ -62,7 +76,11 @@ export function MediaWorkbench() {
             <span className="mini-badge">ComfyUI</span>
           </div>
 
-          <div className="capability-switch" role="tablist" aria-label="生成类型">
+          <div
+            className="capability-switch"
+            role="tablist"
+            aria-label="生成类型"
+          >
             {capabilities.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
@@ -102,9 +120,7 @@ export function MediaWorkbench() {
           </label>
 
           <label className="workbench-field">
-            <span>
-              提示词{generation.promptRequired ? "" : "（可选）"}
-            </span>
+            <span>提示词{generation.promptRequired ? "" : "（可选）"}</span>
             <textarea
               aria-label="生成提示词"
               value={generation.prompt}
@@ -113,8 +129,8 @@ export function MediaWorkbench() {
                 generation.mode === "audio" && !generation.promptRequired
                   ? "此音频处理工作流无需额外提示词"
                   : generation.promptRequired
-                  ? "描述画面主体、风格、构图、光线和运镜…"
-                  : "此工作流可以只使用参考素材、参数或工作流内置提示词"
+                    ? "描述画面主体、风格、构图、光线和运镜…"
+                    : "此工作流可以只使用参考素材、参数或工作流内置提示词"
               }
               rows={6}
             />
@@ -195,12 +211,8 @@ export function MediaWorkbench() {
                     </strong>
                     <span>
                       已选 {selected.length} 个
-                      {parameter.min != null
-                        ? ` · 至少 ${parameter.min}`
-                        : ""}
-                      {parameter.max != null
-                        ? ` · 最多 ${parameter.max}`
-                        : ""}
+                      {parameter.min != null ? ` · 至少 ${parameter.min}` : ""}
+                      {parameter.max != null ? ` · 最多 ${parameter.max}` : ""}
                     </span>
                   </div>
                   <input
@@ -327,11 +339,7 @@ export function MediaWorkbench() {
                     <article key={assetId}>
                       <span>
                         <Music2 size={17} />
-                        {audioTrackLabel(
-                          generation.task,
-                          assetId,
-                          index,
-                        )}
+                        {audioTrackLabel(generation.task, assetId, index)}
                       </span>
                       <audio
                         src={mediaAssetUrl(assetId)}
@@ -384,9 +392,7 @@ export function MediaWorkbench() {
           )}
 
           <div className="canvas-footer">
-            <span>
-              生成结果已保存到素材库，刷新页面后仍可访问。
-            </span>
+            <span>生成结果已保存到素材库，刷新页面后仍可访问。</span>
             <div>
               <button type="button" disabled={!assetIds.length}>
                 保留
@@ -508,7 +514,11 @@ function WorkflowParameterInput({
     <label className="workbench-field">
       <span>{parameter.label}</span>
       <input
-        type={parameter.type === "integer" || parameter.type === "number" ? "number" : "text"}
+        type={
+          parameter.type === "integer" || parameter.type === "number"
+            ? "number"
+            : "text"
+        }
         value={String(value ?? "")}
         min={parameter.min}
         max={parameter.max}
@@ -525,25 +535,29 @@ function WorkflowParameterInput({
 }
 
 function taskStatusLabel(status: string) {
-  return {
-    pending: "等待提交",
-    queued: "排队中",
-    running: "ComfyUI 生成中",
-    succeeded: "生成完成",
-    failed: "生成失败",
-    canceled: "已取消",
-  }[status] ?? status;
+  return (
+    {
+      pending: "等待提交",
+      queued: "排队中",
+      running: "ComfyUI 生成中",
+      succeeded: "生成完成",
+      failed: "生成失败",
+      canceled: "已取消",
+    }[status] ?? status
+  );
 }
 
 function taskTypeLabel(taskType: string) {
-  return {
-    image_generation: "图片",
-    image_processing: "图片处理",
-    video_generation: "视频",
-    video_processing: "视频处理",
-    audio_processing: "音频处理",
-    transcription: "语音转字幕",
-  }[taskType] ?? taskType;
+  return (
+    {
+      image_generation: "图片",
+      image_processing: "图片处理",
+      video_generation: "视频",
+      video_processing: "视频处理",
+      audio_processing: "音频处理",
+      transcription: "语音转字幕",
+    }[taskType] ?? taskType
+  );
 }
 
 function audioTrackLabel(
@@ -559,8 +573,10 @@ function audioTrackLabel(
     ["bass", "贝斯 / Bass"],
     ["other", "其他 / Other"],
   ];
-  return labels.find(([stem]) => filename.includes(stem))?.[1] ??
-    `音频轨道 ${index + 1}`;
+  return (
+    labels.find(([stem]) => filename.includes(stem))?.[1] ??
+    `音频轨道 ${index + 1}`
+  );
 }
 
 function acceptForAssetType(assetType?: string) {

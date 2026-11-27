@@ -13,10 +13,7 @@ import {
   Upload,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import {
-  loadAssets,
-  uploadAssets,
-} from "../../_features/assets/api";
+import { loadAssets, uploadAssets } from "../../_features/assets/api";
 import type {
   AssetLibraryResponse,
   LibraryAsset,
@@ -45,9 +42,8 @@ export function AssetLibraryView() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
-  const [filter, setFilter] = useState<(typeof assetFilters)[number]["type"]>(
-    "all",
-  );
+  const [filter, setFilter] =
+    useState<(typeof assetFilters)[number]["type"]>("all");
   const [query, setQuery] = useState("");
 
   async function refresh() {
@@ -101,7 +97,19 @@ export function AssetLibraryView() {
 
   return (
     <main className="workbench-page asset-library-page">
-      <h1 className="visually-hidden">素材库</h1>
+      <header className="page-heading compact workbench-page-heading">
+        <div>
+          <span className="eyebrow">资产中心</span>
+          <h1>素材库</h1>
+          <p>
+            统一查看上传素材与生成结果。图片、视频、音频和任务来源都保留在同一个可检索资产库中。
+          </p>
+        </div>
+        <div className="heading-status">
+          <span className="status-chip">{data.assets.length} 个素材</span>
+          <span className="status-chip ready">本地持久化</span>
+        </div>
+      </header>
       {error && <div className="generation-error">{error}</div>}
 
       <section className="stat-strip">
@@ -192,7 +200,9 @@ export function AssetLibraryView() {
             <span className="empty-library-icon">
               <FolderOpen size={30} />
             </span>
-            <h2>{data.assets.length ? "没有符合条件的素材" : "素材库还是空的"}</h2>
+            <h2>
+              {data.assets.length ? "没有符合条件的素材" : "素材库还是空的"}
+            </h2>
             <p>
               {data.assets.length
                 ? "调整素材类型、文件名、模型或任务 ID 后重试。"
@@ -241,20 +251,24 @@ function AssetCard({ asset }: { asset: LibraryAsset }) {
 }
 
 function assetTypeLabel(type: string) {
-  return {
-    image: "图片",
-    video: "视频",
-    audio: "音频",
-    file: "文件",
-  }[type] ?? type;
+  return (
+    {
+      image: "图片",
+      video: "视频",
+      audio: "音频",
+      file: "文件",
+    }[type] ?? type
+  );
 }
 
 function sourceLabel(source: string) {
-  return {
-    upload: "用户上传",
-    generated: "生成结果",
-    remote: "远程素材",
-  }[source] ?? source;
+  return (
+    {
+      upload: "用户上传",
+      generated: "生成结果",
+      remote: "远程素材",
+    }[source] ?? source
+  );
 }
 
 function formatBytes(value: number) {

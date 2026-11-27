@@ -4,27 +4,64 @@ import {
   Image as ImageIcon,
   Layers3,
   MessageSquareText,
+  Play,
   Sparkles,
 } from "lucide-react";
+import NextImage from "next/image";
 import Link from "next/link";
 
 export default function DashboardPage() {
   return (
-    <main className="dashboard-page">
-      <header className="page-heading">
-        <div>
-          <span className="eyebrow">工作台总览</span>
-          <h1>先选工作台，再开始创作</h1>
+    <main className="dashboard-page studio-dashboard">
+      <section className="dashboard-hero">
+        <div className="dashboard-hero-copy">
+          <span className="dashboard-index">STUDIO / 01 / 工作台总览</span>
+          <h1>
+            先选工作台，
+            <span>再开始创作。</span>
+          </h1>
           <p>
             造境包含两个独立但共享底层能力的生产方向。每个入口都对应明确的任务、
             资产和后续操作。
           </p>
+          <div className="dashboard-hero-actions">
+            <Link className="dashboard-primary-action" href="/chat">
+              和 Agent 开始
+              <ArrowRight size={17} />
+            </Link>
+            <Link className="dashboard-secondary-action" href="/tasks">
+              查看任务中心
+            </Link>
+          </div>
+          <div className="dashboard-status-line" aria-label="系统状态">
+            <span>
+              <i className="ready-dot" />
+              ComfyUI 已接入
+            </span>
+            <span>
+              <i className="ready-dot" />
+              短剧可导出 MP4
+            </span>
+          </div>
         </div>
-        <div className="heading-status">
-          <span className="status-chip ready">ComfyUI 已接入</span>
-          <span className="status-chip ready">短剧可导出 MP4</span>
+        <div className="dashboard-hero-art">
+          <NextImage
+            src="/demo-city.png"
+            alt="雨夜城市的多模态创作示例"
+            fill
+            priority
+            sizes="(max-width: 980px) 100vw, 42vw"
+          />
+          <span className="dashboard-art-play">
+            <Play size={13} fill="currentColor" />
+            示例画面
+          </span>
+          <div className="dashboard-art-caption">
+            <span>IMAGE / STORY / VIDEO</span>
+            <strong>雨夜城市 · 电影感叙事</strong>
+          </div>
         </div>
-      </header>
+      </section>
 
       <section className="workspace-cards" aria-label="选择工作台">
         <Link className="workspace-card media" href="/media">
@@ -34,7 +71,7 @@ export default function DashboardPage() {
             </span>
             <span className="workspace-badge">核心方向 01</span>
           </div>
-          <div>
+          <div className="workspace-card-copy">
             <span className="workspace-kicker">自然语言驱动的媒体生产</span>
             <h2>多模态创作工作台</h2>
             <p>
@@ -63,7 +100,7 @@ export default function DashboardPage() {
             </span>
             <span className="workspace-badge">核心方向 02</span>
           </div>
-          <div>
+          <div className="workspace-card-copy">
             <span className="workspace-kicker">从故事到成片的完整流水线</span>
             <h2>短剧制作工作台</h2>
             <p>
@@ -96,7 +133,9 @@ export default function DashboardPage() {
             <h3>和 Agent 先梳理创意</h3>
             <p>继续使用本地 Codex，支持流式回复、思考过程和会话历史。</p>
           </div>
-          <ArrowRight size={18} />
+          <span className="agent-entry-arrow">
+            <ArrowRight size={18} />
+          </span>
         </Link>
 
         <div className="capability-map">

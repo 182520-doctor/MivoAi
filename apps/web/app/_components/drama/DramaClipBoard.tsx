@@ -499,7 +499,11 @@ export function DramaClipBoard({
         </div>
       </header>
 
-      {!shots.length ? (
+      {production.loading || library.loading ? (
+        <div className="drama-stage-loading">
+          正在读取本集镜头、视频与声音状态…
+        </div>
+      ) : !shots.length ? (
         <div className="drama-keyframe-empty">
           <Clapperboard size={32} />
           <strong>还没有可制作的镜头</strong>

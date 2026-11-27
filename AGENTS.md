@@ -177,6 +177,9 @@ There is no global CRUD business layer.
 - REST endpoints use `/api/...`.
 - Conversation streaming may use the session WebSocket or the compatibility SSE
   endpoint. New clients should use the session WebSocket.
+- A Codex model/provider configuration change must restart the App Server and
+  create a new Codex Thread. Preserve local product history, but never resume a
+  Thread across runtime signatures.
 - Error responses must be actionable and preserve stable status codes.
 - Background jobs are durable database records, not fire-and-forget tasks with
   no persisted state.

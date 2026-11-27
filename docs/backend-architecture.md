@@ -55,6 +55,7 @@ apps/api/app
 
 - 会话、Turn、Message 持久化；
 - Codex Thread 与本地会话的关联；
+- 模型、Provider 或模型目录配置变化时重启 App Server 并创建新的 Codex Thread；
 - Agent 流式事件、推理内容和中止；
 - 通过 `ConversationModelGateway` 端口选择文本模型；
 - 通过 `ConversationTaskRecorder` 端口记录文本生成任务；

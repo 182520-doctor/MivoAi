@@ -10,6 +10,8 @@ from app.modules.conversations.events import CodexEvent
 class FakeCodexClient:
     def __init__(self) -> None:
         self.running = False
+        self.runtime_signature_value = "test-runtime"
+        self.threads_created = 0
 
     async def start(self) -> None:
         self.running = True
@@ -24,7 +26,12 @@ class FakeCodexClient:
         cwd: Path | None = None,
         shared_roots: list[Path] | None = None,
     ) -> str:
-        return "test-thread"
+        self.threads_created += 1
+        return (
+            "test-thread"
+            if self.threads_created == 1
+            else f"test-thread-{self.threads_created}"
+        )
 
     async def request(
         self,
@@ -63,3 +70,6 @@ class FakeCodexClient:
             "platform": "macos",
             "binary": "/test/codex",
         }
+
+    def runtime_signature(self) -> str:
+        return self.runtime_signature_value
