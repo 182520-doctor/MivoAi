@@ -16,6 +16,7 @@ from app.modules.providers.commands import (
     UpdatePreferencesCommand,
 )
 from app.modules.providers.ports import ProviderRepositoryPort, TextChatPort
+from app.shared.config import DEFAULT_COMFYUI_URL
 from app.shared.errors import ProviderConfigurationError
 from app.shared.model_routing import MediaModelRoute, TextModelRoute
 from app.shared.secrets import SecretBox
@@ -37,11 +38,17 @@ class ProviderService:
         secret_box: SecretBox,
         text_client: TextChatPort,
         local_runtime_status: Callable[[], dict[str, Any]] | None = None,
+        *,
+        comfyui_url: str | None = None,
     ) -> None:
         self._repository = repository
         self._secret_box = secret_box
         self._text_client = text_client
         self._local_runtime_status = local_runtime_status
+        self._comfyui_url = (
+            comfyui_url
+            or os.getenv("ZAOJING_COMFYUI_URL", DEFAULT_COMFYUI_URL)
+        ).strip().rstrip("/") or DEFAULT_COMFYUI_URL
 
     def list_models(self) -> list[dict[str, object]]:
         result: list[dict[str, object]] = []
@@ -226,16 +233,14 @@ class ProviderService:
         if not api_key and row["provider_id"] != "comfyui":
             raise ProviderConfigurationError("尚未配置该供应商 API Key")
         config: dict[str, Any] = json.loads(str(row.get("config_json") or "{}"))
-        base_url = str(
-            config.get("base_url")
-            or row.get("base_url")
-            or (
-                os.getenv("ZAOJING_COMFYUI_URL", "http://127.0.0.1:8000")
-                if row["provider_id"] == "comfyui"
-                else None
+        if row["provider_id"] == "comfyui":
+            base_url = self._comfyui_url
+        else:
+            base_url = str(
+                config.get("base_url")
+                or row.get("base_url")
+                or "https://ark.cn-beijing.volces.com/api/v3"
             )
-            or "https://ark.cn-beijing.volces.com/api/v3"
-        )
         return MediaModelRoute(
             id=str(row["id"]),
             provider_id=str(row["provider_id"]),

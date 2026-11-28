@@ -314,6 +314,55 @@ ComfyUI 默认端口为 `8000`，MivoAi API 默认端口为 `8010`。
 
 浏览器中的 HTTP 与 WebSocket 都直接访问 FastAPI，不经过 Next.js `/api` 代理。
 
+### 双机局域网部署
+
+推荐让 GPU 电脑运行 ComfyUI，另一台电脑运行完整的 MivoAi 服务：
+
+```text
+电脑 A（GPU）
+└─ ComfyUI http://192.168.1.20:8000
+
+电脑 B
+└─ MivoAi API + Web
+   ├─ SQLite 数据库
+   ├─ 生成结果资产
+   └─ 工作流与任务记录
+```
+
+在电脑 A 上启动 ComfyUI，并仅允许电脑 B 访问：
+
+```powershell
+python main.py --listen 0.0.0.0 --port 8000
+
+New-NetFirewallRule `
+  -DisplayName "MivoAi to ComfyUI" `
+  -Direction Inbound `
+  -Protocol TCP `
+  -LocalPort 8000 `
+  -RemoteAddress 192.168.1.30 `
+  -Profile Private `
+  -Action Allow
+```
+
+把示例中的 `192.168.1.20` 换成电脑 A 的固定局域网 IPv4，把
+`192.168.1.30` 换成电脑 B 的固定局域网 IPv4。先验证网络：
+
+```powershell
+Test-NetConnection 192.168.1.20 -Port 8000
+Invoke-RestMethod http://192.168.1.20:8000/system_stats
+```
+
+在电脑 B 上启动 MivoAi 前配置同一个地址：
+
+```powershell
+$env:ZAOJING_COMFYUI_URL = "http://192.168.1.20:8000"
+uv run python scripts/start_local.py
+```
+
+`ZAOJING_COMFYUI_URL` 同时控制工作流发现和生成任务，并优先于数据库中的旧
+ComfyUI 地址。SQLite、资产和工作流数据都保存在电脑 B；电脑 A 只负责
+ComfyUI 计算，其输出目录不作为 MivoAi 的正式数据源。
+
 ---
 
 ## 常用配置
@@ -325,7 +374,7 @@ ComfyUI 默认端口为 `8000`，MivoAi API 默认端口为 `8010`。
 | `CODEX_BINARY` | 本地 Codex App Server 可执行文件 |
 | `CODEX_WORKSPACE` | Codex 默认工作目录 |
 | `DATABASE_PATH` | SQLite 数据库路径 |
-| `COMFYUI_BASE_URL` | ComfyUI 地址，默认 `http://127.0.0.1:8000` |
+| `ZAOJING_COMFYUI_URL` | ComfyUI 地址，默认 `http://127.0.0.1:8000` |
 | `ZAOJING_ASSET_DIR` | 素材与生成结果存储目录 |
 | `ZAOJING_SECRET_KEY_PATH` | 凭证加密密钥文件 |
 | `CODEX_PROTOCOL_LOG` | 是否启用 Codex 协议日志 |

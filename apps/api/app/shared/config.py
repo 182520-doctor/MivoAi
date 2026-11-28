@@ -12,6 +12,8 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
+DEFAULT_COMFYUI_URL = "http://127.0.0.1:8000"
+
 
 @dataclass(frozen=True, slots=True)
 class Settings:
@@ -32,6 +34,7 @@ class Settings:
         "http://localhost:3000",
         "http://127.0.0.1:3000",
     )
+    comfyui_url: str = DEFAULT_COMFYUI_URL
     api_port: int = 8010
 
     @classmethod
@@ -72,8 +75,14 @@ class Settings:
                     project_root / "runtime/creative-projects",
                 )
             ),
+            comfyui_url=_comfyui_url_from_env(),
             api_port=int(os.getenv("ZAOJING_API_PORT", "8010")),
         )
+
+
+def _comfyui_url_from_env() -> str:
+    configured = os.getenv("ZAOJING_COMFYUI_URL", DEFAULT_COMFYUI_URL)
+    return configured.strip().rstrip("/") or DEFAULT_COMFYUI_URL
 
 
 def _resolve_codex_binary(project_root: Path) -> Path:

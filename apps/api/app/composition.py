@@ -107,6 +107,7 @@ def build_container(
         SecretBox(settings.secret_key_path),
         VolcengineChatClient(),
         lambda: client.status() if client else {},
+        comfyui_url=settings.comfyui_url,
     )
     asset_service = AssetService(asset_repository, settings.asset_dir, HttpAssetFetcher())
     comfyui_client = ComfyUIClient()
@@ -161,6 +162,7 @@ def build_container(
         workflow_repository,
         comfyui_client,
         asset_service,
+        comfyui_url=settings.comfyui_url,
     )
     creative_quality_policy = CreativeProjectQualityPolicy()
     conversation_service = ConversationService(

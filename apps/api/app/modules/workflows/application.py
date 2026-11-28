@@ -19,6 +19,7 @@ from app.modules.workflows.ports import (
     WorkflowAssetRecorder,
     WorkflowRepositoryPort,
 )
+from app.shared.config import DEFAULT_COMFYUI_URL
 from app.shared.errors import AppServerError, ProviderConfigurationError
 from app.shared.semantic_parameters import infer_semantic_key
 
@@ -31,13 +32,16 @@ class WorkflowService:
         repository: WorkflowRepositoryPort,
         comfyui: ComfyCatalogPort,
         assets: WorkflowAssetRecorder,
+        *,
+        comfyui_url: str | None = None,
     ) -> None:
         self._repository = repository
         self._comfyui = comfyui
         self._assets = assets
-        self._base_url = os.getenv(
-            "ZAOJING_COMFYUI_URL", "http://127.0.0.1:8000"
-        )
+        self._base_url = (
+            comfyui_url
+            or os.getenv("ZAOJING_COMFYUI_URL", DEFAULT_COMFYUI_URL)
+        ).strip().rstrip("/") or DEFAULT_COMFYUI_URL
 
     async def discover(self) -> dict[str, object]:
         try:
